@@ -5,8 +5,10 @@
    Author :       mick.yi
    date：          2019/3/13
 """
+import keras
 from keras import layers
 from keras import Input, Model
+import tensorflow as tf
 from .base_net import resnet50
 from .anchor import CtpnAnchor
 from .target import CtpnTarget
@@ -78,3 +80,74 @@ def ctpn(base_features, num_anchors, rnn_units=128, fc_units=512):
     predict_side_deltas = layers.Reshape(target_shape=(-1, 2 * num_anchors), name='side_deltas_reshape')(
         predict_side_deltas)
     return class_logits, predict_deltas, predict_side_deltas
+
+
+def _get_layer(model, name):
+    for layer in model.layers:
+        if layer.name == name:
+            return layer
+    return None
+
+
+def compile(keras_model, config, loss_names=[]):
+    """
+    编译模型，增加损失函数，L2正则化以
+    :param keras_model:
+    :param config:
+    :param loss_names: 损失函数列表
+    :return:
+    """
+    # 优化目标
+    optimizer = keras.optimizers.SGD(
+        lr=config.LEARNING_RATE, momentum=config.LEARNING_MOMENTUM,
+        clipnorm=config.GRADIENT_CLIP_NORM)
+    # 增加损失函数，首先清除之前的，防止重复
+    keras_model._losses = []
+    keras_model._per_input_losses = {}
+
+    for name in loss_names:
+        layer = _get_layer(keras_model, name)
+        if layer is None or layer.output in keras_model.losses:
+            continue
+        loss = (tf.reduce_mean(layer.output, keepdims=True)
+                * config.LOSS_WEIGHTS.get(name, 1.))
+        keras_model.add_loss(loss)
+
+    # 增加L2正则化
+    # 跳过批标准化层的 gamma 和 beta 权重
+    reg_losses = [
+        keras.regularizers.l2(config.WEIGHT_DECAY)(w) / tf.cast(tf.size(w), tf.float32)
+        for w in keras_model.trainable_weights
+        if 'gamma' not in w.name and 'beta' not in w.name]
+    keras_model.add_loss(tf.add_n(reg_losses))
+
+    # 编译
+    keras_model.compile(
+        optimizer=optimizer,
+        loss=[None] * len(keras_model.outputs))  # 使用虚拟损失
+
+    # 为每个损失函数增加度量
+    for name in loss_names:
+        if name in keras_model.metrics_names:
+            continue
+        layer = _get_layer(keras_model, name)
+        if layer is None:
+            continue
+        keras_model.metrics_names.append(name)
+        loss = (
+                tf.reduce_mean(layer.output, keepdims=True)
+                * config.LOSS_WEIGHTS.get(name, 1.))
+        keras_model.metrics_tensors.append(loss)
+
+
+def add_metrics(keras_model, metric_name_list, metric_tensor_list):
+    """
+    增加度量
+    :param keras_model: 模型
+    :param metric_name_list: 度量名称列表
+    :param metric_tensor_list: 度量张量列表
+    :return: 无
+    """
+    for name, tensor in zip(metric_name_list, metric_tensor_list):
+        keras_model.metrics_names.append(name)
+        keras_model.metrics_tensors.append(tensor)
