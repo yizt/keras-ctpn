@@ -6,9 +6,11 @@
    date：          2019/3/14
 """
 import os
+import sys
 import tensorflow as tf
 import keras
 import numpy as np
+import argparse
 from keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau
 from ctpn.layers import models
 from ctpn.config import cur_config as config
@@ -46,7 +48,7 @@ def get_call_back():
     return [lr_reducer, checkpoint, log]
 
 
-def main():
+def main(args):
     set_gpu_growth()
     # 加载标注
     annotation_files = file_utils.get_sub_files(config.IMAGE_GT_DIR)
@@ -55,6 +57,10 @@ def main():
     # 加载模型
     m = models.ctpn_net(config, 'train')
     models.compile(m, config, loss_names=['ctpn_regress_loss', 'ctpn_class_loss'])
+    if args.init_epochs > 0:
+        m.load_weights(args.weight_path, by_name=True)
+    else:
+        m.load_weights(config.PRE_TRAINED_WEIGHT, by_name=True)
     m.summary()
     # 生成器
     gen = generator(image_annotations, config.IMAGE_SHAPE[0], config.MAX_GT_INSTANCES, config.IMAGES_PER_GPU)
@@ -62,7 +68,8 @@ def main():
     # 训练
     m.fit_generator(gen,
                     steps_per_epoch=len(image_annotations) // config.IMAGES_PER_GPU,
-                    epochs=50,
+                    epochs=args.epochs,
+                    initial_epoch=args.init_epochs,
                     verbose=True,
                     callbacks=get_call_back(),
                     use_multiprocessing=True)
@@ -72,4 +79,9 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    parse = argparse.ArgumentParser()
+    parse.add_argument("--epochs", type=int, default=50, help="epochs")
+    parse.add_argument("--init_epochs", type=int, default=0, help="epochs")
+    parse.add_argument("--weight_path", type=str, default=None, help="weight path")
+    argments = parse.parse_args(sys.argv[1:])
+    main(argments)
