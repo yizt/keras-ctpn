@@ -113,18 +113,6 @@ def clip_boxes(boxes, window):
     return clipped_boxes
 
 
-def batch_clip_boxes(boxes, window):
-    """
-    批量将boxes裁剪到指定的窗口范围内
-    :param boxes: 边框坐标，[batch_size, N, (y1,x1,y2,x2)]
-    :param window: 窗口坐标，[batch_size, (y1,x1,y2,x2)]
-    :return:
-    """
-    return tf.map_fn(fn=lambda x: clip_boxes(*x),
-                     elems=[boxes, window],
-                     dtype=[tf.float32])
-
-
 def apply_regress(deltas, anchors):
     """
     应用回归目标到边框
@@ -158,5 +146,3 @@ def apply_regress(deltas, anchors):
     x2 = cx + w * 0.5
 
     return tf.stack([y1, x1, y2, x2], axis=1)
-
-
