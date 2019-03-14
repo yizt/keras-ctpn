@@ -37,20 +37,20 @@ def main(args):
     text_boxes, text_scores, _ = m.predict(np.array([image]))
     text_boxes = np_utils.remove_pad(text_boxes[0])
     text_scores = np_utils.remove_pad(text_scores[0])[:, 0]
-    print("text_scores:{}".format(text_scores))
-    print("text_boxes:{}".format(text_boxes))
+    # print("text_scores:{}".format(text_scores))
+    # print("text_boxes:{}".format(text_boxes))
     # 文本行检测器
     detector = TextDetector(config)
     text_lines = detector.detect(text_boxes, text_scores, config.IMAGE_SHAPE)
     print("text_lines:{}".format(text_lines))
 
-    boxes_num=5
-    fig =plt.figure()
-    ax=fig.add_subplot(1,1,1)
-    visualize.display_instances(image, text_lines[:boxes_num,:4],
-                                np.ones_like(text_lines[:boxes_num, 4],np.int32),
-                                ['bg','text'],
-                                scores=text_lines[:boxes_num,4],
+    boxes_num = 3
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+    visualize.display_instances(image, text_lines[:boxes_num, :4],
+                                np.ones_like(text_lines[:boxes_num, 4], np.int32),
+                                ['bg', 'text'],
+                                scores=text_lines[:boxes_num, 4],
                                 ax=ax)
     fig.savefig('examples.{}.png'.format(np.random.randint(10)))
 
