@@ -6,11 +6,12 @@
    date：          2019/3/13
 """
 from keras import layers
-from keras import Input,Model
+from keras import Input, Model
 from .base_net import resnet50
 from .anchor import CtpnAnchor
 from .target import CtpnTarget
-from .losses import ctpn_cls_loss,ctpn_regress_loss
+from .losses import ctpn_cls_loss, ctpn_regress_loss
+from .text_proposals import TextProposal
 
 
 def ctpn_net(batch_size, image_shape, heights, strides, width, max_gt_num, stage='train'):
@@ -28,17 +29,20 @@ def ctpn_net(batch_size, image_shape, heights, strides, width, max_gt_num, stage
     anchors = CtpnAnchor(heights, width, strides, image_shape, name='gen_ctpn_anchors')
 
     if stage == 'train':
-        targets = CtpnTarget(name='ctpn_target')(gt_boxes,gt_class_ids,anchors)
-        deltas,class_ids,anchors_indices,side_deltas=targets[:4]
+        targets = CtpnTarget(name='ctpn_target')(gt_boxes, gt_class_ids, anchors)
+        deltas, class_ids, anchors_indices, side_deltas = targets[:4]
         # 损失函数
-        regress_loss=layers.Lambda(lambda x:ctpn_regress_loss(*x),
-                                   name='ctpn_regress_loss')([predict_deltas,deltas,anchors_indices])
-        cls_loss=layers.Lambda(lambda x:ctpn_cls_loss(*x),
-                               name='ctpn_class_loss')([predict_class_logits,class_ids,anchors_indices])
-        model=Model(inputs=[input_image,gt_boxes,gt_class_ids],outputs=[regress_loss,cls_loss])
+        regress_loss = layers.Lambda(lambda x: ctpn_regress_loss(*x),
+                                     name='ctpn_regress_loss')([predict_deltas, deltas, anchors_indices])
+        cls_loss = layers.Lambda(lambda x: ctpn_cls_loss(*x),
+                                 name='ctpn_class_loss')([predict_class_logits, class_ids, anchors_indices])
+        model = Model(inputs=[input_image, gt_boxes, gt_class_ids], outputs=[regress_loss, cls_loss])
 
     else:
-        pass
+        text_boxes, text_scores, text_class_logits = TextProposal(batch_size, name='text_proposals')(
+            [predict_deltas, predict_class_logits, anchors])
+        model = Model(inputs=input_image, outputs=[text_boxes, text_scores, text_class_logits])
+    return model
 
 
 def ctpn(base_features, num_anchors, rnn_units=128, fc_units=512):
