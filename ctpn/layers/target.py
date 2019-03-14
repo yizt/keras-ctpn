@@ -197,16 +197,6 @@ def ctpn_target_graph(gt_boxes, gt_cls, anchors, valid_anchors_indices, train_an
         positive_num, dtype=tf.float32), tf.cast(negative_num, dtype=tf.float32)]
 
 
-def get_real_anchors_indices(indices, valid_anchors_indices):
-    """
-
-    :param indices: [N]
-    :param valid_anchors_indices: [M]
-    :return:
-    """
-    return tf.gather(valid_anchors_indices, indices)
-
-
 class CtpnTarget(layers.Layer):
     def __init__(self, batch_size, train_anchors_num=128, positive_ratios=0.5, max_gt_num=50, **kwargs):
         self.batch_size = batch_size
