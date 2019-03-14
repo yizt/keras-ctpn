@@ -18,7 +18,7 @@ def load_image(image_path):
     """
     image = io.imread(image_path)
     # 灰度图转为RGB
-    if image.ndim != 3:
+    if image.ndim == 1:
         image = skimage.color.gray2rgb(image)
     # 删除alpha通道
     return image[..., :3]
@@ -46,7 +46,7 @@ def load_image_gt(image_id, image_path, output_size, gt_boxes=None):
     image_meta = compose_image_meta(image_id, original_shape, image.shape,
                                     window, scale)
     # 根据缩放及padding调整GT边框
-    if gt_boxes is not None:
+    if gt_boxes is not None and gt_boxes.shape[0] > 0:
         gt_boxes = adjust_box(gt_boxes, padding, scale)
 
     return image, image_meta, gt_boxes
