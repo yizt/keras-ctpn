@@ -160,7 +160,7 @@ class TextProposalGraphBuilder(object):
             succession_index = successions[np.argmax(scores[successions])]
             # 获取Bj的前驱文本框
             precursors = self.get_precursors(succession_index)
-            print("{},{},{}".format(index, succession_index, precursors))
+            # print("{},{},{}".format(index, succession_index, precursors))
             # 如果Bi也是,也是Bj的前驱文本框中，得分最高的那个；则Bi,Bj构成文本框对
             if self.scores[index] >= np.max(self.scores[precursors]):
                 graph[index, succession_index] = True
