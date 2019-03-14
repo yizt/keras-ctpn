@@ -16,22 +16,31 @@ from .losses import ctpn_cls_loss, ctpn_regress_loss
 from .text_proposals import TextProposal
 
 
-def ctpn_net(batch_size, image_shape, heights, strides, width, max_gt_num, stage='train'):
+def ctpn_net(config, stage='train'):
     # 网络构建
-    input_image = Input(batch_shape=(batch_size,) + image_shape, name='input_image')
-    input_image_meta = Input(batch_shape=(batch_size, 12), name='input_image_meta')
-    gt_class_ids = Input(batch_shape=(batch_size, max_gt_num, 2), name='gt_class_ids')
-    gt_boxes = Input(batch_shape=(batch_size, max_gt_num, 5), name='gt_boxes')
+    #input_image = Input(batch_shape=(config.IMAGES_PER_GPU,) + config.IMAGE_SHAPE, name='input_image')
+    #input_image_meta = Input(batch_shape=(config.IMAGES_PER_GPU, 12), name='input_image_meta')
+    #gt_class_ids = Input(batch_shape=(config.IMAGES_PER_GPU, config.MAX_GT_INSTANCES, 2), name='gt_class_ids')
+    #gt_boxes = Input(batch_shape=(config.IMAGES_PER_GPU, config.MAX_GT_INSTANCES, 5), name='gt_boxes')
+    input_image = Input(shape= config.IMAGE_SHAPE, name='input_image')
+    input_image_meta = Input(shape=( 12,1), name='input_image_meta')
+    gt_class_ids = Input(shape=( config.MAX_GT_INSTANCES, 2), name='gt_class_ids')
+    gt_boxes = Input(shape=( config.MAX_GT_INSTANCES, 5), name='gt_boxes')
     # 预测
     base_features = resnet50(input_image)
-    num_anchors = len(heights)
-    predict_class_logits, predict_deltas, predict_side_deltas = ctpn(base_features, num_anchors)
+    num_anchors = len(config.ANCHORS_HEIGHT)
+    predict_class_logits, predict_deltas, predict_side_deltas = ctpn(base_features, num_anchors, 64, 256)
 
     # anchors生成
-    anchors = CtpnAnchor(heights, width, strides, image_shape, name='gen_ctpn_anchors')
+    anchors, valid_anchors_indices = CtpnAnchor(config.ANCHORS_HEIGHT, config.ANCHORS_WIDTH, config.NET_STRIDE,
+                                                config.IMAGE_SHAPE, name='gen_ctpn_anchors')(base_features)
 
     if stage == 'train':
-        targets = CtpnTarget(name='ctpn_target')(gt_boxes, gt_class_ids, anchors)
+        targets = CtpnTarget(config.IMAGES_PER_GPU,
+                             train_anchors_num=config.TRAIN_ANCHORS_PER_IMAGE,
+                             positive_ratios=config.ANCHOR_POSITIVE_RATIO,
+                             max_gt_num=config.MAX_GT_INSTANCES,
+                             name='ctpn_target')([gt_boxes, gt_class_ids, anchors, valid_anchors_indices])
         deltas, class_ids, anchors_indices, side_deltas = targets[:4]
         # 损失函数
         regress_loss = layers.Lambda(lambda x: ctpn_regress_loss(*x),
@@ -41,8 +50,12 @@ def ctpn_net(batch_size, image_shape, heights, strides, width, max_gt_num, stage
         model = Model(inputs=[input_image, gt_boxes, gt_class_ids], outputs=[regress_loss, cls_loss])
 
     else:
-        text_boxes, text_scores, text_class_logits = TextProposal(batch_size, name='text_proposals')(
-            [predict_deltas, predict_class_logits, anchors])
+        text_boxes, text_scores, text_class_logits = TextProposal(config.IMAGES_PER_GPU,
+                                                                  score_threshold=config.TEXT_PROPOSALS_MIN_SCORE,
+                                                                  output_box_num=config.TEXT_PROPOSALS_MAX_NUM,
+                                                                  iou_threshold=config.TEXT_PROPOSALS_NMS_THRESH,
+                                                                  name='text_proposals')(
+            [predict_deltas, predict_class_logits, anchors, valid_anchors_indices])
         model = Model(inputs=input_image, outputs=[text_boxes, text_scores, text_class_logits])
     return model
 
@@ -71,13 +84,13 @@ def ctpn(base_features, num_anchors, rnn_units=128, fc_units=512):
 
     # 分类
     class_logits = layers.Conv2D(2 * num_anchors, kernel_size=(1, 1), name='cls')(fc_output)
-    class_logits = layers.Reshape(target_shape=(-1, 2 * num_anchors), name='cls_reshape')(class_logits)
+    class_logits = layers.Reshape(target_shape=(-1, 2), name='cls_reshape')(class_logits)
     # 中心点垂直坐标和高度回归
     predict_deltas = layers.Conv2D(2 * num_anchors, kernel_size=(1, 1), name='deltas')(fc_output)
-    predict_deltas = layers.Reshape(target_shape=(-1, 2 * num_anchors), name='deltas_reshape')(predict_deltas)
+    predict_deltas = layers.Reshape(target_shape=(-1, 2), name='deltas_reshape')(predict_deltas)
     # 侧边精调
     predict_side_deltas = layers.Conv2D(2 * num_anchors, kernel_size=(1, 1), name='side_deltas')(fc_output)
-    predict_side_deltas = layers.Reshape(target_shape=(-1, 2 * num_anchors), name='side_deltas_reshape')(
+    predict_side_deltas = layers.Reshape(target_shape=(-1, 2), name='side_deltas_reshape')(
         predict_side_deltas)
     return class_logits, predict_deltas, predict_side_deltas
 

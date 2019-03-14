@@ -19,7 +19,7 @@ def generate_anchors(heights, width):
     """
     w = np.array([width] * len(heights))
     h = np.array(heights)
-    return np.hstack([-0.5 * h, -0.5 * w, 0.5 * h, 0.5 * w])
+    return np.stack([-0.5 * h, -0.5 * w, 0.5 * h, 0.5 * w], axis=1)
 
 
 def shift(shape, strides, base_anchors):
@@ -59,11 +59,13 @@ def filter_out_of_bound_boxes(boxes, shape):
     :return:
     """
     h, w = list(shape)[:2]
-    bool_indices = tf.logical_and(tf.logical_and(tf.logical_and(boxes[:, 0] >= 0,
-                                                                boxes[:, 1] >= 0),
-                                                 boxes[:2] <= h),
-                                  boxes[:3] <= 2)
-    return tf.boolean_mask(boxes, bool_indices)
+    valid_boxes_tag = tf.logical_and(tf.logical_and(tf.logical_and(boxes[:, 0] >= 0,
+                                                                   boxes[:, 1] >= 0),
+                                                    boxes[:, 2] <= h),
+                                     boxes[:, 3] <= w)
+    boxes = tf.boolean_mask(boxes, valid_boxes_tag)
+    valid_boxes_indices = tf.where(valid_boxes_tag)[:, 0]
+    return boxes, valid_boxes_indices
 
 
 class CtpnAnchor(keras.layers.Layer):
@@ -94,13 +96,15 @@ class CtpnAnchor(keras.layers.Layer):
         print("feature_shape:{}".format(features_shape))
 
         base_anchors = generate_anchors(self.heights, self.width)
+        # print("len(base_anchors):".format(len(base_anchors)))
         anchors = shift(features_shape[1:3], self.strides, base_anchors)
-        anchors = filter_out_of_bound_boxes(anchors, self.image_shape)
+        anchors, valid_anchors_indices = filter_out_of_bound_boxes(anchors, self.image_shape)
         self.num_anchors = tf.shape(anchors)[0]
         # 扩展第一维，batch_size;每个样本都有相同的anchors
         anchors = tf.tile(tf.expand_dims(anchors, axis=0), [features_shape[0], 1, 1])
+        valid_anchors_indices = tf.tile(tf.expand_dims(valid_anchors_indices, axis=0), [features_shape[0], 1])
 
-        return anchors
+        return [anchors, valid_anchors_indices]
 
     def compute_output_shape(self, input_shape):
         """
@@ -109,6 +113,15 @@ class CtpnAnchor(keras.layers.Layer):
         :return:
         """
         # 计算所有的anchors数量
-        total = np.prod(input_shape[1:3]) * self.num_anchors
-        return (input_shape[0],
-                total, 4)
+        total = self.num_anchors
+        return [(input_shape[0], total, 4),
+                (input_shape[0], total)]
+
+
+def main():
+    anchors = generate_anchors([11, 16, 23, 33, 48, 68, 97, 139, 198, 283], 16)
+    print(anchors)
+
+
+if __name__ == '__main__':
+    main()

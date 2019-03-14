@@ -88,7 +88,8 @@ def side_regress_target(anchors, gt_boxes, side='left'):
     return target / 0.1
 
 
-def ctpn_target_graph(gt_boxes, gt_cls, anchors, train_anchors_num=128, positive_ratios=0.5, max_gt_num=50):
+def ctpn_target_graph(gt_boxes, gt_cls, anchors, valid_anchors_indices, train_anchors_num=128, positive_ratios=0.5,
+                      max_gt_num=50):
     """
     处理单个图像的ctpn回归目标
     a)正样本: 与gt IoU大于0.7的anchor,或者与GT IoU最大的那个anchor
@@ -96,6 +97,7 @@ def ctpn_target_graph(gt_boxes, gt_cls, anchors, train_anchors_num=128, positive
     :param gt_boxes: gt边框坐标 [gt_num, (y1,x1,y2,x2,tag)], tag=0为padding
     :param gt_cls: gt类别 [gt_num, 1+1], 最后一位为tag, tag=0为padding
     :param anchors: [anchor_num, (y1,x1,y2,x2)]
+    :param valid_anchors_indices:有效的anchors索引 [anchor_num]
     :param train_anchors_num
     :param positive_ratios
     :param max_gt_num
@@ -119,14 +121,16 @@ def ctpn_target_graph(gt_boxes, gt_cls, anchors, train_anchors_num=128, positive
 
     # 每个anchors最大iou ，且iou>0.7的为正样本
     anchors_iou_max = tf.reduce_max(iou, axis=0, keep_dims=True)  # 每个anchor最大的iou; [1,num_anchors]
-    anchors_iou_max = tf.where(tf.greater_equal(anchors_iou_max, 0.7), anchors_iou_max, 1.0)
+    anchors_iou_max = tf.where(tf.greater_equal(anchors_iou_max, 0.7),
+                               anchors_iou_max,
+                               tf.ones_like(anchors_iou_max))
     anchors_iou_max_bool = tf.equal(iou, anchors_iou_max)
 
     # 合并两部分正样本索引
     positive_bool_matrix = tf.logical_or(gt_iou_max_bool, anchors_iou_max_bool)
     positive_indices = tf.where(positive_bool_matrix)
     # 采样正样本
-    positive_num = tf.minimum(tf.shape(positive_indices)[0], train_anchors_num * positive_ratios)
+    positive_num = tf.minimum(tf.shape(positive_indices)[0], int(train_anchors_num * positive_ratios))
     positive_indices = tf.random_shuffle(positive_indices)[:positive_num]
 
     # 获取正样本和对应的GT
@@ -144,18 +148,22 @@ def ctpn_target_graph(gt_boxes, gt_cls, anchors, train_anchors_num=128, positive
     anchors_x1 = tf.tile(tf.expand_dims(anchors_x1, axis=0), [gt_num, 1])  # 扩充为二维[gt_num,num_anchors]
 
     # gt左右两侧对应的anchor;每个GT对应左右两侧
-    gt_left_anchors_index = tf.argmin(tf.where(positive_bool_matrix, anchors_x1, 10.0 ** 10), axis=1)
-    gt_right_anchors_index = tf.argmax(tf.where(positive_bool_matrix, anchors_x1, -10.0 ** 10), axis=1)
+    gt_left_anchors_index = tf.argmin(
+        tf.where(positive_bool_matrix, anchors_x1, tf.ones_like(anchors_x1) * 10.0 ** 10), axis=1)
+    gt_right_anchors_index = tf.argmax(
+        tf.where(positive_bool_matrix, anchors_x1, tf.ones_like(anchors_x1) * -10.0 ** 10), axis=1)
 
-    gt_left_anchors = tf.gather(gt_left_anchors_index)
-    gt_right_anchors = tf.gather(gt_right_anchors_index)
+    gt_left_anchors = tf.gather(anchors, gt_left_anchors_index)
+    gt_right_anchors = tf.gather(anchors, gt_right_anchors_index)
 
     # 侧边回归目标
     side_left_deltas = side_regress_target(gt_left_anchors, gt_boxes, 'left')
     side_right_deltas = side_regress_target(gt_right_anchors, gt_boxes, 'right')
 
-    side_deltas_all = tf.stack([side_left_deltas, side_right_deltas, gt_left_anchors_index, gt_right_anchors_index],
-                               axis=1)
+    side_deltas = tf.stack([side_left_deltas, side_right_deltas], axis=1)
+    # 对应到有效的anchors
+    side_indices = tf.stack([tf.gather(valid_anchors_indices, gt_left_anchors_index),
+                             tf.gather(valid_anchors_indices, gt_right_anchors_index)], axis=1)
 
     # # 获取负样本 iou<0.5
     negative_bool = tf.less(tf.reduce_max(iou, axis=0), 0.5)
@@ -163,16 +171,17 @@ def ctpn_target_graph(gt_boxes, gt_cls, anchors, train_anchors_num=128, positive
     negative_bool = tf.logical_and(negative_bool, tf.logical_not(positive_bool))
 
     # 采样负样本
-    negative_num = tf.minimum(train_anchors_num * (1. - positive_ratios), train_anchors_num - positive_num)
-    negative_indices = tf.random_shuffle(tf.where(negative_bool))[:negative_num]
+    negative_num = tf.minimum(int(train_anchors_num * (1. - positive_ratios)), train_anchors_num - positive_num)
+    negative_indices = tf.random_shuffle(tf.where(negative_bool)[:, 0])[:negative_num]
 
     negative_gt_cls = tf.zeros([negative_num])  # 负样本类别id为0
-    negative_deltas = tf.zeros([negative_num, 4])
+    negative_deltas = tf.zeros([negative_num, 2])
 
     # 合并正负样本
     deltas = tf.concat([deltas, negative_deltas], axis=0, name='ctpn_target_deltas')
     class_ids = tf.concat([positive_gt_cls, negative_gt_cls], axis=0, name='ctpn_target_class_ids')
-    indices = tf.concat([positive_anchor_indices, negative_indices[:, 0]], axis=0, name='ctpn_train_anchor_indices')
+    indices = tf.concat([tf.gather(valid_anchors_indices, positive_anchor_indices), negative_indices], axis=0,
+                        name='ctpn_train_anchor_indices')
 
     # 计算padding
     deltas, class_ids = tf_utils.pad_list_to_fixed_size([deltas, tf.expand_dims(class_ids, 1)],
@@ -181,15 +190,26 @@ def ctpn_target_graph(gt_boxes, gt_cls, anchors, train_anchors_num=128, positive
     indices = tf_utils.pad_to_fixed_size_with_negative(tf.expand_dims(indices, 1), train_anchors_num,
                                                        negative_num=negative_num, data_type=tf.int64)
 
-    side_deltas_all = tf_utils.pad_to_fixed_size(side_deltas_all, max_gt_num)
+    side_deltas, side_indices = tf_utils.pad_list_to_fixed_size([side_deltas, side_indices], max_gt_num)
 
-    return [deltas, class_ids, indices, side_deltas_all, tf.cast(  # 用作度量的必须是浮点类型
+    return [deltas, class_ids, indices, side_deltas, side_indices, tf.cast(  # 用作度量的必须是浮点类型
         gt_num, dtype=tf.float32), tf.cast(
         positive_num, dtype=tf.float32), tf.cast(negative_num, dtype=tf.float32)]
 
 
+def get_real_anchors_indices(indices, valid_anchors_indices):
+    """
+
+    :param indices: [N]
+    :param valid_anchors_indices: [M]
+    :return:
+    """
+    return tf.gather(valid_anchors_indices, indices)
+
+
 class CtpnTarget(layers.Layer):
-    def __init__(self, train_anchors_num=128, positive_ratios=0.5, max_gt_num=50, **kwargs):
+    def __init__(self, batch_size, train_anchors_num=128, positive_ratios=0.5, max_gt_num=50, **kwargs):
+        self.batch_size = batch_size
         self.train_anchors_num = train_anchors_num
         self.positive_ratios = positive_ratios
         self.max_gt_num = max_gt_num
@@ -202,25 +222,32 @@ class CtpnTarget(layers.Layer):
         inputs[0]: GT 边框坐标 [batch_size, MAX_GT_BOXs,(y1,x1,y2,x2,tag)] ,tag=0 为padding
         inputs[1]: GT 类别 [batch_size, MAX_GT_BOXs,num_class+1] ;最后一位为tag, tag=0 为padding
         inputs[2]: Anchors [batch_size, anchor_num,(y1,x1,y2,x2)]
+        inputs[3]: val_anchors_indices [batch_size, anchor_num]
         :param kwargs:
         :return:
         """
-        gt_boxes, gt_cls_ids, anchors = inputs
-        options = {"train_anchors_num": self.train_anchors_num,
-                   "positive_ratios": self.positive_ratios,
-                   "max_gt_num": self.max_gt_num}
-
-        outputs = tf.map_fn(fn=lambda x: ctpn_target_graph(*x, **options),
-                            elems=[gt_boxes, gt_cls_ids, anchors],
-                            dtype=[tf.float32] * 2 + [tf.int64] + [tf.float32] * 4)
-
+        gt_boxes, gt_cls_ids, anchors, valid_anchors_indices = inputs
+        # options = {"train_anchors_num": self.train_anchors_num,
+        #            "positive_ratios": self.positive_ratios,
+        #            "max_gt_num": self.max_gt_num}
+        #
+        # outputs = tf.map_fn(fn=lambda x: ctpn_target_graph(*x, **options),
+        #                     elems=[gt_boxes, gt_cls_ids, anchors, valid_anchors_indices],
+        #                     dtype=[tf.float32] * 2 + [tf.int64] + [tf.float32] + [tf.int64] + [tf.float32] * 3)
+        outputs = tf_utils.batch_slice([gt_boxes, gt_cls_ids, anchors, valid_anchors_indices],
+                                       lambda x, y, z, s: ctpn_target_graph(x, y, z, s,
+                                                                            self.train_anchors_num,
+                                                                            self.positive_ratios,
+                                                                            self.max_gt_num),
+                                       batch_size=self.batch_size)
         return outputs
 
     def compute_output_shape(self, input_shape):
-        return [(input_shape[0][0], self.train_anchors_num, 5),  # deltas
+        return [(input_shape[0][0], self.train_anchors_num, 3),  # deltas (dy,dh)
                 (input_shape[0][0], self.train_anchors_num, 2),  # cls
                 (input_shape[0][0], self.train_anchors_num, 2),  # indices
-                (input_shape[0][0], self.max_gt_num, 5),  # side_rgr
+                (input_shape[0][0], self.max_gt_num, 3),  # side_deltas
+                (input_shape[0][0], self.max_gt_num, 3),  # side_indices
                 (input_shape[0][0],),  # gt_num
                 (input_shape[0][0],),  # positive_num
                 (input_shape[0][0],)]  # negative_num

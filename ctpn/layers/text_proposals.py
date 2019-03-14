@@ -24,7 +24,7 @@ def apply_regress(deltas, anchors):
     cy = (anchors[:, 2] + anchors[:, 0]) * 0.5
 
     # 回归系数
-    deltas *= tf.constant([0.1, 0.1, 0.2, 0.2])
+    deltas *= tf.constant([0.1, 0.2])
     dy, dh = deltas[:, 0], deltas[:, 1]
 
     # 中心坐标回归
@@ -39,7 +39,12 @@ def apply_regress(deltas, anchors):
     return tf.stack([y1, anchors[:, 1], y2, anchors[:, 3]], axis=1)
 
 
-def nms(boxes, scores, class_logits, max_output_size, iou_threshold=0.5, score_threshold=0.05, name=None):
+def get_valid_predicts(deltas, class_logits, valid_anchors_indices):
+    return tf.gather(deltas, valid_anchors_indices), tf.gather(class_logits, valid_anchors_indices)
+
+
+def nms(boxes, scores, class_logits, max_output_size, iou_threshold=0.5, score_threshold=0.05,
+        name=None):
     """
     非极大抑制
     :param boxes: 形状为[num_boxes, 4]的二维浮点型Tensor.
@@ -86,12 +91,18 @@ class TextProposal(layers.Layer):
         inputs[0]: deltas, [batch_size,N,(dy,dh)]   N是所有的anchors数量
         inputs[1]: class logits [batch_size,N,num_classes]
         inputs[2]: anchors [batch_size,N,(y1,x1,y2,x2)]
+        inputs[3]: valid_anchors_indices [batch_size, anchor_num]
         :param kwargs:
         :return:
         """
         deltas = inputs[0]
         class_logits = inputs[1]
         anchors = inputs[2]
+        val_anchors_indices = inputs[3]
+        # 只看有效anchor的预测结果
+        deltas, class_logits = tf_utils.batch_slice([deltas, class_logits, val_anchors_indices],
+                                                    lambda x, y, z: get_valid_predicts(x, y, z),
+                                                    self.batch_size)
         # 转为分类评分
         class_scores = tf.nn.softmax(logits=class_logits, axis=-1)  # [N,num_classes]
         fg_scores = tf.reduce_max(class_scores[..., 1:], axis=-1)  # 第一类为背景 (N,)

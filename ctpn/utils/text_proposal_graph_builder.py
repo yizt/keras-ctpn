@@ -58,7 +58,7 @@ class TextProposalGraphBuilder(object):
         """
         box = self.text_proposals[index]
         results = []
-        for left in range(int(box[0]) + 1, min(int(box[0]) + self.max_horizontal_gap + 1, self.im_size[1])):
+        for left in range(int(box[1]) + 1, min(int(box[1]) + self.max_horizontal_gap + 1, self.im_size[1])):
             adj_box_indices = self.boxes_table[left]
             for adj_box_index in adj_box_indices:
                 if self.meet_v_iou(adj_box_index, index):
@@ -76,7 +76,7 @@ class TextProposalGraphBuilder(object):
         box = self.text_proposals[index]
         results = []
         # 向前遍历
-        for left in range(int(box[0]) - 1, max(int(box[0] - self.max_horizontal_gap), 0) - 1, -1):
+        for left in range(int(box[1]) - 1, max(int(box[1] - self.max_horizontal_gap), 0) - 1, -1):
             adj_box_indices = self.boxes_table[left]
             for adj_box_index in adj_box_indices:
                 if self.meet_v_iou(adj_box_index, index):
@@ -160,6 +160,7 @@ class TextProposalGraphBuilder(object):
             succession_index = successions[np.argmax(scores[successions])]
             # 获取Bj的前驱文本框
             precursors = self.get_precursors(succession_index)
+            print("{},{},{}".format(index, succession_index, precursors))
             # 如果Bi也是,也是Bj的前驱文本框中，得分最高的那个；则Bi,Bj构成文本框对
             if self.scores[index] >= np.max(self.scores[precursors]):
                 graph[index, succession_index] = True
