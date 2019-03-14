@@ -24,6 +24,7 @@ def set_gpu_growth():
     session = tf.Session(config=cfg)
     keras.backend.set_session(session)
 
+
 def get_call_back():
     """
     定义call back
@@ -38,8 +39,8 @@ def get_call_back():
     # 验证误差没有提升
     lr_reducer = ReduceLROnPlateau(monitor='loss',
                                    factor=np.sqrt(0.1),
-                                   cooldown=1,
-                                   patience=1,
+                                   cooldown=0,
+                                   patience=5,
                                    min_lr=0)
     log = TensorBoard(log_dir='log')
     return [lr_reducer, checkpoint, log]
@@ -68,15 +69,6 @@ def main():
 
     # 保存模型
     m.save(config.WEIGHT_PATH)
-    # i = 0
-    # while i < 10000:
-    #     data = next(gen)
-    #     if data[0]["gt_boxes"].shape != (2, 200, 5):
-    #         print(data[0]["gt_boxes"][0].shape, data[0]["gt_boxes"][1].shape)
-    #     i += 1
-    #     import time
-    #     if i % 100 == 0:
-    #         print("{}:{}".format(time.time(), i))
 
 
 if __name__ == '__main__':
