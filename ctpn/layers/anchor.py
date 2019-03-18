@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
    File Name：     anchor
-   Description :
+   Description :  ctpn anchor层，在输入图像边框外的anchors丢弃
    Author :       mick.yi
    date：          2019/3/13
 """

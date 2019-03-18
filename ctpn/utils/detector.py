@@ -10,6 +10,14 @@ from .text_proposal_connector import TextProposalConnector
 from ..utils import np_utils
 
 
+def normalize(data):
+    if data.shape[0] == 0:
+        return data
+    max_ = data.max()
+    min_ = data.min()
+    return (data - min_) / (max_ - min_) if max_ - min_ != 0 else data - min_
+
+
 class TextDetector:
     """
         Detect text from an image
@@ -28,7 +36,7 @@ class TextDetector:
         :return: text_lines; [ num,(y1,x1,y2,x2,score)]
         """
 
-        # scores = normalize(scores)
+        # scores = normalize(scores)  加上后，效果变差
 
         text_lines = self.text_proposal_connector.get_text_lines(text_proposals, scores, image_shape)
         keep_indices = self.filter_boxes(text_lines)
