@@ -68,7 +68,7 @@ def gen_gt_from_quadrilaterals(gt_quadrilaterals, input_gt_class_ids, image_shap
         # 为每个四边形生成固定宽度的gt
         for j in range(len(xs) - 1):
             x1, x2 = xs[j], xs[j + 1]
-            y1, y2 = np.mean(ys_min[j:j + 2]), np.mean(ys_max[j:j + 2])
+            y1, y2 = np.min(ys_min[j:j + 2]), np.max(ys_max[j:j + 2])
             gt_boxes.append([y1, x1, y2, x2])
             gt_class_ids.append(input_gt_class_ids[i])
     gt_boxes = np.reshape(np.array(gt_boxes), (-1, 4))
