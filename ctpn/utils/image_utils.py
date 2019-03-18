@@ -24,13 +24,14 @@ def load_image(image_path):
     return image[..., :3]
 
 
-def load_image_gt(image_id, image_path, output_size, gt_boxes=None):
+def load_image_gt(image_id, image_path, output_size, gt_boxes=None, gt_quadrilaterals=None):
     """
     加载图像，生成训练输入大小的图像，并调整GT 边框，返回相关元数据信息
     :param image_id: 图像编号id
     :param image_path: 图像路径
     :param output_size: 图像输出尺寸，及网络输入到高度或宽度(默认长宽相等)
     :param gt_boxes: GT 边框 [N,(y1,x1,y2,x2)]
+    :param gt_quadrilaterals:
     :return:
     image: (H,W,3)
     image_meta: 元数据信息，详见compose_image_meta
@@ -48,8 +49,10 @@ def load_image_gt(image_id, image_path, output_size, gt_boxes=None):
     # 根据缩放及padding调整GT边框
     if gt_boxes is not None and gt_boxes.shape[0] > 0:
         gt_boxes = adjust_box(gt_boxes, padding, scale)
+    if gt_quadrilaterals is not None and gt_quadrilaterals.shape[0] > 0:
+        gt_quadrilaterals = adjust_quadrilaterals(gt_quadrilaterals, padding, scale)
 
-    return image, image_meta, gt_boxes
+    return image, image_meta, gt_boxes, gt_quadrilaterals
 
 
 def resize_image(image, max_dim):
@@ -130,6 +133,20 @@ def adjust_box(boxes, padding, scale):
     boxes[:, 0::2] += padding[0][0]  # 高度padding
     boxes[:, 1::2] += padding[1][0]  # 宽度padding
     return boxes
+
+
+def adjust_quadrilaterals(quadrilaterals, padding, scale):
+    """
+    根据填充和缩放因子，调整boxes的值
+    :param quadrilaterals: numpy 数组; GT boxes [N,(y1,x1,y2,x2)]
+    :param padding: [(top_pad, bottom_pad), (left_pad, right_pad), (0, 0)]
+    :param scale: 缩放因子
+    :return:
+    """
+    quadrilaterals = quadrilaterals * scale
+    quadrilaterals[:, 1::2] += padding[0][0]  # 高度padding
+    quadrilaterals[:, 0::2] += padding[1][0]  # 宽度padding
+    return quadrilaterals
 
 
 def recover_detect_boxes(boxes, window, scale):

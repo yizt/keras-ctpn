@@ -18,14 +18,15 @@ from .text_proposals import TextProposal
 
 def ctpn_net(config, stage='train'):
     # 网络构建
-    #input_image = Input(batch_shape=(config.IMAGES_PER_GPU,) + config.IMAGE_SHAPE, name='input_image')
-    #input_image_meta = Input(batch_shape=(config.IMAGES_PER_GPU, 12), name='input_image_meta')
-    #gt_class_ids = Input(batch_shape=(config.IMAGES_PER_GPU, config.MAX_GT_INSTANCES, 2), name='gt_class_ids')
-    #gt_boxes = Input(batch_shape=(config.IMAGES_PER_GPU, config.MAX_GT_INSTANCES, 5), name='gt_boxes')
-    input_image = Input(shape= config.IMAGE_SHAPE, name='input_image')
-    input_image_meta = Input(shape=( 12,1), name='input_image_meta')
-    gt_class_ids = Input(shape=( config.MAX_GT_INSTANCES, 2), name='gt_class_ids')
-    gt_boxes = Input(shape=( config.MAX_GT_INSTANCES, 5), name='gt_boxes')
+    # input_image = Input(batch_shape=(config.IMAGES_PER_GPU,) + config.IMAGE_SHAPE, name='input_image')
+    # input_image_meta = Input(batch_shape=(config.IMAGES_PER_GPU, 12), name='input_image_meta')
+    # gt_class_ids = Input(batch_shape=(config.IMAGES_PER_GPU, config.MAX_GT_INSTANCES, 2), name='gt_class_ids')
+    # gt_boxes = Input(batch_shape=(config.IMAGES_PER_GPU, config.MAX_GT_INSTANCES, 5), name='gt_boxes')
+    input_image = Input(shape=config.IMAGE_SHAPE, name='input_image')
+    input_image_meta = Input(shape=(12, 1), name='input_image_meta')
+    gt_class_ids = Input(shape=(config.MAX_GT_INSTANCES, 2), name='gt_class_ids')
+    gt_boxes = Input(shape=(config.MAX_GT_INSTANCES, 5), name='gt_boxes')
+
     # 预测
     base_features = resnet50(input_image)
     num_anchors = len(config.ANCHORS_HEIGHT)

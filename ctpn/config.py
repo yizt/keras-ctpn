@@ -10,7 +10,7 @@
 class Config(object):
     IMAGES_PER_GPU = 4
     IMAGE_SHAPE = (608, 608, 3)
-    MAX_GT_INSTANCES = 200
+    MAX_GT_INSTANCES = 500
 
     NUM_CLASSES = 1 + 1  #
     CLASS_MAPPING = {'bg': 0,
@@ -18,7 +18,7 @@ class Config(object):
     # 训练样本
     ANCHORS_HEIGHT = [11, 16, 23, 33, 48, 68, 97, 139, 198, 283]
     ANCHORS_WIDTH = 16
-    TRAIN_ANCHORS_PER_IMAGE = 128
+    TRAIN_ANCHORS_PER_IMAGE = 256
     ANCHOR_POSITIVE_RATIO = 0.5
     # 步长
     NET_STRIDE = 16
