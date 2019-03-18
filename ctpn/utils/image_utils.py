@@ -137,8 +137,8 @@ def adjust_box(boxes, padding, scale):
 
 def adjust_quadrilaterals(quadrilaterals, padding, scale):
     """
-    根据填充和缩放因子，调整boxes的值
-    :param quadrilaterals: numpy 数组; GT boxes [N,(y1,x1,y2,x2)]
+    根据填充和缩放因子，调整四边形的值
+    :param quadrilaterals: numpy 数组; GT quadrilaterals[N,(x1,y1,x2,y2,x3,y3,x4,y4)]
     :param padding: [(top_pad, bottom_pad), (left_pad, right_pad), (0, 0)]
     :param scale: 缩放因子
     :return:

@@ -6,7 +6,7 @@
    date：          2019/3/14
 """
 import numpy as np
-from ..utils import image_utils, np_utils,gt_utils
+from ..utils import image_utils, np_utils, gt_utils
 
 
 def generator(image_annotations, batch_size, image_shape, width_stride, max_gt_num):
@@ -20,14 +20,15 @@ def generator(image_annotations, batch_size, image_shape, width_stride, max_gt_n
         for id in ids:
             image_annotation = image_annotations[id]
             image, image_meta, _, gt_quadrilaterals = image_utils.load_image_gt(id,
-                                                                    image_annotation['image_path'],
-                                                                                 image_shape[0],
-                                                                    gt_quadrilaterals=image_annotation['quadrilaterals'])
+                                                                                image_annotation['image_path'],
+                                                                                image_shape[0],
+                                                                                gt_quadrilaterals=image_annotation[
+                                                                                    'quadrilaterals'])
             class_ids = image_annotation['labels']
             gt_boxes, class_ids = gt_utils.gen_gt_from_quadrilaterals(gt_quadrilaterals,
-                                                           class_ids,
-                                                           image_shape,
-                                                           width_stride)
+                                                                      class_ids,
+                                                                      image_shape,
+                                                                      width_stride)
 
             batch_images.append(image)
             batch_images_meta.append(image_meta)

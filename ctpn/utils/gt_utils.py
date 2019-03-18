@@ -38,7 +38,8 @@ def get_min_max_y(quadrilateral, xs):
     y_val_3 = linear_fit_y(np.array([x3, x4]), np.array([y3, y4]), xs)
     y_val_4 = linear_fit_y(np.array([x4, x1]), np.array([y4, y1]), xs)
     y_val = np.stack([y_val_1, y_val_2, y_val_3, y_val_4], axis=1)
-    return np.min(y_val, axis=1), np.max(y_val, axis=1)
+    y_val_sort = np.sort(y_val, axis=1)
+    return y_val_sort[:, 1], y_val_sort[:, 2]
 
 
 def get_xs_in_range(x_array, x_min, x_max):
@@ -58,7 +59,7 @@ def gen_gt_from_quadrilaterals(gt_quadrilaterals, input_gt_class_ids, image_shap
     x_array = np.arange(0, w + 1, width_stride, np.float32)  # 固定宽度间隔的x坐标点
     # 每个四边形x 最小值和最大值
     x_min_np = np.min(gt_quadrilaterals[:, ::2], axis=1)
-    x_max_np = np.min(gt_quadrilaterals[:, ::2], axis=1)
+    x_max_np = np.max(gt_quadrilaterals[:, ::2], axis=1)
     gt_boxes = []
     gt_class_ids = []
     for i in np.arange(len(gt_quadrilaterals)):
