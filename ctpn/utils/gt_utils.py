@@ -54,7 +54,7 @@ def get_xs_in_range(x_array, x_min, x_max):
     return xs
 
 
-def gen_gt_from_quadrilaterals(gt_quadrilaterals, input_gt_class_ids, image_shape, width_stride):
+def gen_gt_from_quadrilaterals(gt_quadrilaterals, input_gt_class_ids, image_shape, width_stride, box_min_height=8):
     h, w = list(image_shape)[:2]
     x_array = np.arange(0, w + 1, width_stride, np.float32)  # 固定宽度间隔的x坐标点
     # 每个四边形x 最小值和最大值
@@ -73,4 +73,7 @@ def gen_gt_from_quadrilaterals(gt_quadrilaterals, input_gt_class_ids, image_shap
             gt_class_ids.append(input_gt_class_ids[i])
     gt_boxes = np.reshape(np.array(gt_boxes), (-1, 4))
     gt_class_ids = np.reshape(np.array(gt_class_ids), (-1,))
-    return gt_boxes, gt_class_ids
+    # 过滤高度太小的边框
+    height = gt_boxes[:, 2] - gt_boxes[:, 0]
+    indices = np.where(height >= box_min_height)
+    return gt_boxes[indices], gt_class_ids[indices]
