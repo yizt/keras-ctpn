@@ -81,7 +81,7 @@ def display_instances(image, boxes,
                                   edgecolor=color, facecolor='none')
             patches.Polygon
             ax.add_patch(p)
-        ax.text(x1, y1 + 8, scores[i] if scores is None else None,
+        ax.text(x1, y1 + 8, scores[i] if scores is not None else '',
                 color='w', size=11, backgroundcolor="none")
 
     ax.imshow(masked_image.astype(np.uint8))

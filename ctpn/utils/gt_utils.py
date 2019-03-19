@@ -37,9 +37,23 @@ def get_min_max_y(quadrilateral, xs):
     y_val_2 = linear_fit_y(np.array([x2, x3]), np.array([y2, y3]), xs)
     y_val_3 = linear_fit_y(np.array([x3, x4]), np.array([y3, y4]), xs)
     y_val_4 = linear_fit_y(np.array([x4, x1]), np.array([y4, y1]), xs)
-    y_val = np.stack([y_val_1, y_val_2, y_val_3, y_val_4], axis=1)
-    y_val_sort = np.sort(y_val, axis=1)
-    return y_val_sort[:, 1], y_val_sort[:, 2]
+    y_val_min = []
+    y_val_max = []
+    for i in range(len(xs)):
+        y_val = []
+        if min(x1, x2) <= xs[i] <= max(x1, x2):
+            y_val.append(y_val_1[i])
+        if min(x2, x3) <= xs[i] <= max(x2, x3):
+            y_val.append(y_val_2[i])
+        if min(x3, x4) <= xs[i] <= max(x3, x4):
+            y_val.append(y_val_3[i])
+        if min(x4, x1) <= xs[i] <= max(x4, x1):
+            y_val.append(y_val_4[i])
+        # print("y_val:{}".format(y_val))
+        y_val_min.append(min(y_val))
+        y_val_max.append(max(y_val))
+
+    return np.array(y_val_min), np.array(y_val_max)
 
 
 def get_xs_in_range(x_array, x_min, x_max):
@@ -65,6 +79,7 @@ def gen_gt_from_quadrilaterals(gt_quadrilaterals, input_gt_class_ids, image_shap
     for i in np.arange(len(gt_quadrilaterals)):
         xs = get_xs_in_range(x_array, x_min_np[i], x_max_np[i])  # 获取四边形内的x中坐标点
         ys_min, ys_max = get_min_max_y(gt_quadrilaterals[i], xs)
+        # print("xs:{}".format(xs))
         # 为每个四边形生成固定宽度的gt
         for j in range(len(xs) - 1):
             x1, x2 = xs[j], xs[j + 1]

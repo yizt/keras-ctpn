@@ -28,7 +28,8 @@ def generator(image_annotations, batch_size, image_shape, width_stride, max_gt_n
             gt_boxes, class_ids = gt_utils.gen_gt_from_quadrilaterals(gt_quadrilaterals,
                                                                       class_ids,
                                                                       image_shape,
-                                                                      width_stride)
+                                                                      width_stride,
+                                                                      box_min_height=8)
 
             batch_images.append(image)
             batch_images_meta.append(image_meta)
