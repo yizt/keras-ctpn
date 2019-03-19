@@ -7,6 +7,7 @@
 """
 import numpy as np
 import os
+import glob
 
 
 def load_annotation(annotation_path, image_dir):
@@ -19,10 +20,10 @@ def load_annotation(annotation_path, image_dir):
     image_annotation = {}
     # 文件名称，路径
     base_name = os.path.basename(annotation_path)
-    image_name = base_name[3:-3] + 'jpg'  # gt_img_3.txt,img_3.jpg
+    image_name = base_name[3:-3] + '*'  # 通配符 gt_img_3.txt,img_3.jpg or png
     image_annotation["annotation_path"] = annotation_path
-    image_annotation["file_name"] = image_name  # 图像文件名
-    image_annotation["image_path"] = os.path.join(image_dir, image_name)
+    image_annotation["image_path"] = glob.glob(os.path.join(image_dir, image_name))[0]
+    image_annotation["file_name"] = os.path.basename(image_annotation["image_path"])  # 图像文件名
     # 读取边框标注
     bbox = []
     quadrilateral = []  # 四边形
