@@ -20,10 +20,10 @@ from ctpn.layers import models
 
 def main(args):
     # 加载图片
-    image, image_meta, _ = image_utils.load_image_gt(id,
-                                                     args.image_path,
-                                                     config.IMAGE_SHAPE[0],
-                                                     None)
+    image, image_meta, _, _ = image_utils.load_image_gt(np.random.randint(10),
+                                                        args.image_path,
+                                                        config.IMAGE_SHAPE[0],
+                                                        None)
     # 加载模型
     config.IMAGES_PER_GPU = 1
     m = models.ctpn_net(config, 'test')
@@ -37,21 +37,19 @@ def main(args):
     text_boxes, text_scores, _ = m.predict(np.array([image]))
     text_boxes = np_utils.remove_pad(text_boxes[0])
     text_scores = np_utils.remove_pad(text_scores[0])[:, 0]
-    # print("text_scores:{}".format(text_scores))
-    # print("text_boxes:{}".format(text_boxes))
-    # 文本行检测器
-    detector = TextDetector(config)
-    text_lines = detector.detect(text_boxes, text_scores, config.IMAGE_SHAPE)
-    print("text_lines:{}".format(text_lines))
 
-    boxes_num = 3
-    fig = plt.figure()
+    # 文本行检测器
+    image_meta = image_utils.parse_image_meta(image_meta)
+    detector = TextDetector(config)
+    text_lines = detector.detect(text_boxes, text_scores, config.IMAGE_SHAPE, image_meta['window'])
+    # print("text_lines:{}".format(text_lines))
+
+    boxes_num = 15
+    fig = plt.figure(figsize=(16, 16))
     ax = fig.add_subplot(1, 1, 1)
-    visualize.display_instances(image, text_lines[:boxes_num, :4],
-                                np.ones_like(text_lines[:boxes_num, 4], np.int32),
-                                ['bg', 'text'],
-                                scores=text_lines[:boxes_num, 4],
-                                ax=ax)
+
+    visualize.display_polygons(image, text_lines[:boxes_num, :8], text_lines[:boxes_num, 8],
+                               ax=ax)
     fig.savefig('examples.{}.png'.format(np.random.randint(10)))
 
 
