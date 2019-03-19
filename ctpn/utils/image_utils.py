@@ -104,14 +104,14 @@ def compose_image_meta(image_id, original_image_shape, image_shape,
 def parse_image_meta(meta):
     """
     解析图像元数据信息,注意输入是元数据信息数组
-    :param meta: [batch,12]
+    :param meta: [12]
     :return:
     """
-    image_id = meta[:, 0]
-    original_image_shape = meta[:, 1:4]
-    image_shape = meta[:, 4:7]
-    window = meta[:, 7:11]  # (y1, x1, y2, x2) window of image in in pixels
-    scale = meta[:, 11]
+    image_id = meta[0]
+    original_image_shape = meta[1:4]
+    image_shape = meta[4:7]
+    window = meta[7:11]  # (y1, x1, y2, x2) window of image in in pixels
+    scale = meta[11]
     return {
         "image_id": image_id.astype(np.int32),
         "original_image_shape": original_image_shape.astype(np.int32),
