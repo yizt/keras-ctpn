@@ -108,7 +108,7 @@ def display_polygons(image, polygons, scores=None, figsize=(16, 16), ax=None, co
         ax.add_patch(patch)
         # 多边形得分
         x1, y1 = polygon[0][:]
-        ax.text(x1, y1 + 8, scores[i] if scores is not None else '',
+        ax.text(x1, y1 - 8, scores[i] if scores is not None else '',
                 color='w', size=11, backgroundcolor="none")
     ax.imshow(image.astype(np.uint8))
     if auto_show:
