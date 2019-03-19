@@ -54,6 +54,8 @@ def main(args):
     annotation_files = file_utils.get_sub_files(config.IMAGE_GT_DIR)
     image_annotations = [reader.load_annotation(file,
                                                 config.IMAGE_DIR) for file in annotation_files]
+    # 过滤不存在的图像，ICDAR2017中部分图像找不到
+    image_annotations = [ann for ann in image_annotations if os.path.exists(ann['image_path'])]
     # 加载模型
     m = models.ctpn_net(config, 'train')
     models.compile(m, config, loss_names=['ctpn_regress_loss', 'ctpn_class_loss'])
@@ -81,9 +83,8 @@ def main(args):
     # 保存模型
     m.save(config.WEIGHT_PATH)
 
-
-if __name__ == '__main__':
-    parse = argparse.ArgumentParser()
+    if __name__ == '__main__':
+        parse = argparse.ArgumentParser()
     parse.add_argument("--epochs", type=int, default=50, help="epochs")
     parse.add_argument("--init_epochs", type=int, default=0, help="epochs")
     parse.add_argument("--weight_path", type=str, default=None, help="weight path")
