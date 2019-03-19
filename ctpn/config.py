@@ -29,9 +29,9 @@ class Config(object):
     TEXT_PROPOSALS_WIDTH = 16
     # text line boxes超参数
     LINE_MIN_SCORE = 0.7
-    MAX_HORIZONTAL_GAP = 50
+    MAX_HORIZONTAL_GAP = 30
     TEXT_LINE_NMS_THRESH = 0.3
-    MIN_NUM_PROPOSALS = 2
+    MIN_NUM_PROPOSALS = 1
     MIN_RATIO = 1.2
     MIN_V_OVERLAPS = 0.7
     MIN_SIZE_SIM = 0.7
