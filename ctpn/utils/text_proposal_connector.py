@@ -48,9 +48,9 @@ class TextProposalConnector:
         :param im_size: 图像尺寸,tuple(H,W,C)
         :return: 文本行，边框和得分,numpy数组   [m,(y1,x1,y2,x2,score)]
         """
-        # tp=text proposal
         tp_groups = self.group_text_proposals(text_proposals, scores, im_size)
-        text_lines = np.zeros((len(tp_groups), 5), np.float32)
+        text_lines = np.zeros((len(tp_groups), 9), np.float32)
+        # print("len(tp_groups):{}".format(len(tp_groups)))
         # 逐个文本行处理
         for index, tp_indices in enumerate(tp_groups):
             text_line_boxes = text_proposals[list(tp_indices)]
@@ -60,17 +60,21 @@ class TextProposalConnector:
             # 文本框宽度的一般
             offset = (text_line_boxes[0, 3] - text_line_boxes[0, 1]) * 0.5
             # 使用一元线性函数求文本行左右两边高度边界
-            lt_y, rt_y = self.fit_y(text_line_boxes[:, 1], text_line_boxes[:, 0], x_min + offset, x_max - offset)
-            lb_y, rb_y = self.fit_y(text_line_boxes[:, 1], text_line_boxes[:, 2], x_min + offset, x_max - offset)
+            lt_y, rt_y = self.fit_y(text_line_boxes[:, 1], text_line_boxes[:, 0], x_min - offset, x_max + offset)
+            lb_y, rb_y = self.fit_y(text_line_boxes[:, 1], text_line_boxes[:, 2], x_min - offset, x_max + offset)
 
             # 文本行的得分为所有文本框得分的均值
             score = scores[list(tp_indices)].sum() / float(len(tp_indices))
             # 文本行坐标
-            text_lines[index, 0] = min(lt_y, rt_y)
-            text_lines[index, 1] = x_min
-            text_lines[index, 2] = max(lb_y, rb_y)
-            text_lines[index, 3] = x_max
-            text_lines[index, 4] = score
+            text_lines[index, 0] = x_min
+            text_lines[index, 1] = lt_y
+            text_lines[index, 2] = x_max
+            text_lines[index, 3] = rt_y
+            text_lines[index, 4] = x_max
+            text_lines[index, 5] = rb_y
+            text_lines[index, 6] = x_min
+            text_lines[index, 7] = lb_y
+            text_lines[index, 8] = score
         # 裁剪到图像尺寸内
         text_lines = clip_boxes(text_lines, im_size)
 

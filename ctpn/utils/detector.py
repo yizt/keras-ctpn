@@ -37,7 +37,6 @@ class TextDetector:
         """
 
         # scores = normalize(scores)  加上后，效果变差
-
         text_lines = self.text_proposal_connector.get_text_lines(text_proposals, scores, image_shape)
         keep_indices = self.filter_boxes(text_lines)
         text_lines = text_lines[keep_indices]
@@ -51,8 +50,7 @@ class TextDetector:
         return text_lines
 
     def filter_boxes(self, boxes):
-        heights = boxes[:, 2] - boxes[:, 0]
-        widths = boxes[:, 3] - boxes[:, 1]
+        widths = boxes[:, 2] - boxes[:, 0]
         scores = boxes[:, -1]
-        return np.where((widths / heights > self.config.MIN_RATIO) & (scores > self.config.LINE_MIN_SCORE) &
+        return np.where((scores > self.config.LINE_MIN_SCORE) &
                         (widths > (self.config.TEXT_PROPOSALS_WIDTH * self.config.MIN_NUM_PROPOSALS)))[0]
