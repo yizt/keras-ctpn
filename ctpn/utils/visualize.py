@@ -27,11 +27,11 @@ def random_colors(N, bright=True):
     return colors
 
 
-def display_instances(image, boxes,
-                      scores=None, title="",
-                      figsize=(16, 16), ax=None,
-                      show_bbox=True,
-                      colors=None):
+def display_boxes(image, boxes,
+                  scores=None, title="",
+                  figsize=(16, 16), ax=None,
+                  show_bbox=True,
+                  colors=None):
     """
     可视化实例
     :param image: numpy数组，[h,w,c}
@@ -79,11 +79,37 @@ def display_instances(image, boxes,
             p = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2,
                                   alpha=0.7, linestyle="dashed",
                                   edgecolor=color, facecolor='none')
-            patches.Polygon
             ax.add_patch(p)
         ax.text(x1, y1 + 8, scores[i] if scores is not None else '',
                 color='w', size=11, backgroundcolor="none")
 
     ax.imshow(masked_image.astype(np.uint8))
+    if auto_show:
+        plt.show()
+
+
+def display_polygons(image, polygons, scores=None, figsize=(16, 16), ax=None, colors=None):
+    auto_show = False
+    if ax is None:
+        _, ax = plt.subplots(1, figsize=figsize)
+        auto_show = True
+    if colors is None:
+        colors = random_colors(len(polygons))
+
+    height, width = image.shape[:2]
+    ax.set_ylim(height + 10, -10)
+    ax.set_xlim(-10, width + 10)
+    ax.axis('off')
+
+    for i, polygon in enumerate(polygons):
+        color = colors[i]
+        polygon = np.reshape(polygon, (-1, 2))  # 转为[n,(x,y)]
+        patch = patches.Polygon(polygon, facecolor=None, fill=False, color=color)
+        ax.add_patch(patch)
+        # 多边形得分
+        x1, y1 = polygon[0][:]
+        ax.text(x1, y1 + 8, scores[i] if scores is not None else '',
+                color='w', size=11, backgroundcolor="none")
+    ax.imshow(image.astype(np.uint8))
     if auto_show:
         plt.show()
