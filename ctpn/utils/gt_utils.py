@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
    File Name：     gt_utils
-   Description :
+   Description :   gt 四边形分割为固定宽度的系列gt boxes
    Author :       mick.yi
    date：          2019/3/18
 """
@@ -10,7 +10,7 @@ import numpy as np
 
 def linear_fit_y(xs, ys, x_list):
     """
-    线性函数拟合两点(x1,y1),(x2,y2)；并求得x_set在的取值
+    线性函数拟合两点(x1,y1),(x2,y2)；并求得x_list在的取值
     :param xs:  [x1,x2]
     :param ys:  [y1,y2]
     :param x_list: x轴坐标点,numpy数组 [n]
@@ -57,6 +57,13 @@ def get_min_max_y(quadrilateral, xs):
 
 
 def get_xs_in_range(x_array, x_min, x_max):
+    """
+    获取分割坐标点
+    :param x_array: 宽度方向分割坐标点数组；0~image_width,间隔16 ；如:[0,16,32,...608]
+    :param x_min: 四边形x最小值
+    :param x_max: 四边形x最大值
+    :return:
+    """
     indices = np.logical_and(x_array >= x_min, x_array <= x_max)
     xs = x_array[indices]
     # 处理两端的值
@@ -64,11 +71,21 @@ def get_xs_in_range(x_array, x_min, x_max):
         xs = np.insert(xs, 0, x_min)
     if xs.shape[0] == 0 or xs[-1] < x_max:
         xs = np.append(xs, x_max)
-
     return xs
 
 
 def gen_gt_from_quadrilaterals(gt_quadrilaterals, input_gt_class_ids, image_shape, width_stride, box_min_height=8):
+    """
+    从gt 四边形生成，宽度固定的gt boxes
+    :param gt_quadrilaterals: GT四边形坐标,[n,(x1,y1,x2,y2,x3,y3,x4,y4)]
+    :param input_gt_class_ids: GT四边形类别，一般就是1 [n]
+    :param image_shape:
+    :param width_stride: 分割的步长，一般16
+    :param box_min_height: 分割后GT boxes的最小高度
+    :return:
+            gt_boxes：[m,(y1,x1,y2,x2)]
+            gt_class_ids: [m]
+    """
     h, w = list(image_shape)[:2]
     x_array = np.arange(0, w + 1, width_stride, np.float32)  # 固定宽度间隔的x坐标点
     # 每个四边形x 最小值和最大值
