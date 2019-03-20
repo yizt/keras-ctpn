@@ -38,6 +38,8 @@ b. 预训练模型下载
 
 ​    ICDAR2015训练集上训练好的模型下载地址：[ctpn.h5](https://pan.baidu.com/s/1U7wErHzzwQxWkssAAp50zQ) 提取码:kqso
 
+​    ICDAR2017训练集上训练好的模型下载地址  [ctpn.025.h5](https://pan.baidu.com/s/1hyG_nWch-Omtd2U1m6sDVQ) 提取码:rpsk
+
 c.修改配置类config.py中如下属性
 
 ```python
@@ -62,6 +64,7 @@ a. 训练数据下载
 #icdar2017
 wget -c -t 0 http://datasets.cvc.uab.es/rrc/ch8_training_images_1~8.zip
 wget -c -t 0 http://datasets.cvc.uab.es/rrc/ch8_training_localization_transcription_gt_v2.zip
+wget -c -t 0 http://datasets.cvc.uab.es/rrc/ch8_test_images.zip
 ```
 
 
@@ -88,7 +91,7 @@ c. 修改配置类config.py中，如下属性
 d.训练
 
 ```shell
-python train.py --epochs 100
+python train.py --epochs 50
 ```
 
 
@@ -96,6 +99,22 @@ python train.py --epochs 100
 
 
 ## 例子
+
+### ICDAR2015
+
+![](image_examples/examples.4.png)
+
+![](image_examples/examples.5.png)
+
+### ICDAR2017
+
+​          由于ICDAR2017测试集还未下载完，任然是ICDAR2015的测试样例
+
+![](image_examples/examples.2.png)
+
+
+
+![](image_examples/examples.6.png)
 
 
 
