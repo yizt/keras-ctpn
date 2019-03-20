@@ -47,7 +47,7 @@ def ctpn_regress_target(anchors, gt_boxes):
     计算回归目标
     :param anchors: [N,(y1,x1,y2,x2)]
     :param gt_boxes: [N,(y1,x1,y2,x2)]
-    :return: [N, (dy, dh)]
+    :return: [N, (dy, dh, dx)]  dx 代表侧边改善的
     """
     # anchor高度
     h = anchors[:, 2] - anchors[:, 0]
@@ -62,30 +62,26 @@ def ctpn_regress_target(anchors, gt_boxes):
     # 计算回归目标
     dy = (gt_center_y - center_y) / h
     dh = tf.log(gt_h / h)
-
-    target = tf.stack([dy, dh], axis=1)
-    target /= tf.constant([0.1, 0.2])
+    dx = side_regress_target(anchors, gt_boxes)  # 侧边改善
+    target = tf.stack([dy, dh, dx], axis=1)
+    target /= tf.constant([0.1, 0.2, 0.1])
 
     return target
 
 
-def side_regress_target(anchors, gt_boxes, side='left'):
+def side_regress_target(anchors, gt_boxes):
     """
-
-    :param anchors:
-    :param gt_boxes:
-    :param side:
+    侧边改善回归目标
+    :param anchors: [N,(y1,x1,y2,x2)]
+    :param gt_boxes: anchor 对应的GT boxes[N,(y1,x1,y2,x2)]
     :return:
     """
-    w = anchors[:, 3] - anchors[:, 1]
+    w = anchors[:, 3] - anchors[:, 1]  # 实际是固定长度16
     center_x = (anchors[:, 3] + anchors[:, 1]) * 0.5
-    # 判断是左侧还是右侧
-    if side == 'left':
-        target = (gt_boxes[:, 1] - center_x) / w
-    else:
-        target = (gt_boxes[:, 3] - center_x) / w
-
-    return target / 0.1
+    gt_center_x = (gt_boxes[:, 3] + gt_boxes[:, 1]) * 0.5
+    # 侧边框移动到gt的侧边，相当于中心点偏移的两倍;不是侧边的anchor 偏移为0;
+    dx = (gt_center_x - center_x) * 2 / w
+    return dx
 
 
 def ctpn_target_graph(gt_boxes, gt_cls, anchors, valid_anchors_indices, train_anchors_num=128, positive_ratios=0.5,
@@ -102,10 +98,9 @@ def ctpn_target_graph(gt_boxes, gt_cls, anchors, valid_anchors_indices, train_an
     :param positive_ratios
     :param max_gt_num
     :return:
-    deltas:[train_anchors_num, (dy,dh,tag)],anchor边框回归目标,tag=1为正样本,tag=0为padding
+    deltas:[train_anchors_num, (dy,dh,dx,tag)],anchor边框回归目标,tag=1为正样本,tag=0为padding
     class_id:[train_anchors_num,(class_id,tag)]
     indices: [train_anchors_num,(anchors_index,tag)] tag=1为正样本,tag=0为padding,-1为负样本
-    side_deltas_all：[max_gt_num,(left_deltas,right_deltas,left_index,right_index,tag)]
     """
     # 获取真正的GT,去除标签位
     gt_boxes = tf_utils.remove_pad(gt_boxes)
@@ -128,7 +123,8 @@ def ctpn_target_graph(gt_boxes, gt_cls, anchors, valid_anchors_indices, train_an
 
     # 合并两部分正样本索引
     positive_bool_matrix = tf.logical_or(gt_iou_max_bool, anchors_iou_max_bool)
-    positive_indices = tf.where(positive_bool_matrix)
+    positive_indices = tf.where(positive_bool_matrix)  # 第一维gt索引号,第二维anchor索引号
+    # before_sample_positive_indices = positive_indices  # 采样之前的正样本索引
     # 采样正样本
     positive_num = tf.minimum(tf.shape(positive_indices)[0], int(train_anchors_num * positive_ratios))
     positive_indices = tf.random_shuffle(positive_indices)[:positive_num]
@@ -143,28 +139,6 @@ def ctpn_target_graph(gt_boxes, gt_cls, anchors, valid_anchors_indices, train_an
     # 计算回归目标
     deltas = ctpn_regress_target(positive_anchors, positive_gt_boxes)
 
-    # 找到每个gt两端的anchor
-    anchors_x1 = anchors[:, 1]  # anchors的左侧坐标
-    anchors_x1 = tf.tile(tf.expand_dims(anchors_x1, axis=0), [gt_num, 1])  # 扩充为二维[gt_num,num_anchors]
-
-    # gt左右两侧对应的anchor;每个GT对应左右两侧
-    gt_left_anchors_index = tf.argmin(
-        tf.where(positive_bool_matrix, anchors_x1, tf.ones_like(anchors_x1) * 10.0 ** 10), axis=1)
-    gt_right_anchors_index = tf.argmax(
-        tf.where(positive_bool_matrix, anchors_x1, tf.ones_like(anchors_x1) * -10.0 ** 10), axis=1)
-
-    gt_left_anchors = tf.gather(anchors, gt_left_anchors_index)
-    gt_right_anchors = tf.gather(anchors, gt_right_anchors_index)
-
-    # 侧边回归目标
-    side_left_deltas = side_regress_target(gt_left_anchors, gt_boxes, 'left')
-    side_right_deltas = side_regress_target(gt_right_anchors, gt_boxes, 'right')
-
-    side_deltas = tf.stack([side_left_deltas, side_right_deltas], axis=1)
-    # 对应到有效的anchors
-    side_indices = tf.stack([tf.gather(valid_anchors_indices, gt_left_anchors_index),
-                             tf.gather(valid_anchors_indices, gt_right_anchors_index)], axis=1)
-
     # # 获取负样本 iou<0.5
     negative_bool = tf.less(tf.reduce_max(iou, axis=0), 0.5)
     positive_bool = tf.reduce_any(positive_bool_matrix, axis=0)  # 正样本anchors [num_anchors]
@@ -175,7 +149,7 @@ def ctpn_target_graph(gt_boxes, gt_cls, anchors, valid_anchors_indices, train_an
     negative_indices = tf.random_shuffle(tf.where(negative_bool)[:, 0])[:negative_num]
 
     negative_gt_cls = tf.zeros([negative_num])  # 负样本类别id为0
-    negative_deltas = tf.zeros([negative_num, 2])
+    negative_deltas = tf.zeros([negative_num, 3])
 
     # 合并正负样本
     deltas = tf.concat([deltas, negative_deltas], axis=0, name='ctpn_target_deltas')
@@ -190,9 +164,7 @@ def ctpn_target_graph(gt_boxes, gt_cls, anchors, valid_anchors_indices, train_an
     indices = tf_utils.pad_to_fixed_size_with_negative(tf.expand_dims(indices, 1), train_anchors_num,
                                                        negative_num=negative_num, data_type=tf.int64)
 
-    side_deltas, side_indices = tf_utils.pad_list_to_fixed_size([side_deltas, side_indices], max_gt_num)
-
-    return [deltas, class_ids, indices, side_deltas, side_indices, tf.cast(  # 用作度量的必须是浮点类型
+    return [deltas, class_ids, indices, tf.cast(  # 用作度量的必须是浮点类型
         gt_num, dtype=tf.float32), tf.cast(
         positive_num, dtype=tf.float32), tf.cast(negative_num, dtype=tf.float32)]
 
@@ -233,11 +205,9 @@ class CtpnTarget(layers.Layer):
         return outputs
 
     def compute_output_shape(self, input_shape):
-        return [(input_shape[0][0], self.train_anchors_num, 3),  # deltas (dy,dh)
+        return [(input_shape[0][0], self.train_anchors_num, 4),  # deltas (dy,dh,dx)
                 (input_shape[0][0], self.train_anchors_num, 2),  # cls
                 (input_shape[0][0], self.train_anchors_num, 2),  # indices
-                (input_shape[0][0], self.max_gt_num, 3),  # side_deltas
-                (input_shape[0][0], self.max_gt_num, 3),  # side_indices
                 (input_shape[0][0],),  # gt_num
                 (input_shape[0][0],),  # positive_num
                 (input_shape[0][0],)]  # negative_num

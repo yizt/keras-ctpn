@@ -43,7 +43,7 @@ def get_call_back():
                                    factor=np.sqrt(0.1),
                                    cooldown=0,
                                    patience=5,
-                                   min_lr=0)
+                                   min_lr=1e-8)
     log = TensorBoard(log_dir='log')
     return [lr_reducer, checkpoint, log]
 
@@ -58,7 +58,7 @@ def main(args):
     image_annotations = [ann for ann in image_annotations if os.path.exists(ann['image_path'])]
     # 加载模型
     m = models.ctpn_net(config, 'train')
-    models.compile(m, config, loss_names=['ctpn_regress_loss', 'ctpn_class_loss'])
+    models.compile(m, config, loss_names=['ctpn_regress_loss', 'ctpn_class_loss', 'side_regress_loss'])
     if args.init_epochs > 0:
         m.load_weights(args.weight_path, by_name=True)
     else:
@@ -83,8 +83,9 @@ def main(args):
     # 保存模型
     m.save(config.WEIGHT_PATH)
 
-    if __name__ == '__main__':
-        parse = argparse.ArgumentParser()
+
+if __name__ == '__main__':
+    parse = argparse.ArgumentParser()
     parse.add_argument("--epochs", type=int, default=50, help="epochs")
     parse.add_argument("--init_epochs", type=int, default=0, help="epochs")
     parse.add_argument("--weight_path", type=str, default=None, help="weight path")

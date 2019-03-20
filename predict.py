@@ -28,9 +28,9 @@ def main(args):
     config.IMAGES_PER_GPU = 1
     m = models.ctpn_net(config, 'test')
     if args.weight_path is not None:
-        m.load_weights(args.weight_path)
+        m.load_weights(args.weight_path, by_name=True)
     else:
-        m.load_weights(config.WEIGHT_PATH)
+        m.load_weights(config.WEIGHT_PATH, by_name=True)
     # m.summary()
 
     # 模型预测

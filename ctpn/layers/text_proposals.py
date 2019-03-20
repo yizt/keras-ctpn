@@ -10,37 +10,51 @@ import tensorflow as tf
 from ..utils import tf_utils
 
 
-def apply_regress(deltas, anchors):
+def apply_regress(deltas, side_deltas, anchors, use_side=False):
     """
     应用回归目标到边框, 垂直中心点偏移和高度缩放
     :param deltas: 回归目标[N,(dy,dh,)]
+    :param side_deltas: 回归目标[N,(dx)]
     :param anchors: anchor boxes[N,(y1,x1,y2,x2)]
+    :param use_side: 是否应用侧边回归
     :return:
     """
     # 高度和宽度
     h = anchors[:, 2] - anchors[:, 0]
+    w = anchors[:, 3] - anchors[:, 1]
 
     # 中心点坐标
     cy = (anchors[:, 2] + anchors[:, 0]) * 0.5
+    cx = (anchors[:, 3] + anchors[:, 1]) * 0.5
 
+    deltas = tf.concat([deltas, side_deltas], axis=1)
     # 回归系数
-    deltas *= tf.constant([0.1, 0.2])
-    dy, dh = deltas[:, 0], deltas[:, 1]
+    deltas *= tf.constant([0.1, 0.2, 0.1])
+    dy, dh, dx = deltas[:, 0], deltas[:, 1], deltas[:, 2]
 
     # 中心坐标回归
     cy += dy * h
+    # 侧边精调
+    cx += dx * w
     # 高度和宽度回归
     h *= tf.exp(dh)
 
     # 转为y1,x1,y2,x2
     y1 = cy - h * 0.5
     y2 = cy + h * 0.5
+    x1 = cx - w * 0.5
+    x2 = cx + w * 0.5
 
-    return tf.stack([y1, anchors[:, 1], y2, anchors[:, 3]], axis=1)
+    if use_side:
+        return tf.stack([y1, x1, y2, x2], axis=1)
+    else:
+        return tf.stack([y1, anchors[:, 1], y2, anchors[:, 3]], axis=1)
 
 
-def get_valid_predicts(deltas, class_logits, valid_anchors_indices):
-    return tf.gather(deltas, valid_anchors_indices), tf.gather(class_logits, valid_anchors_indices)
+def get_valid_predicts(deltas, side_deltas, class_logits, valid_anchors_indices):
+    return tf.gather(deltas, valid_anchors_indices), tf.gather(
+        side_deltas, valid_anchors_indices), tf.gather(
+        class_logits, valid_anchors_indices)
 
 
 def nms(boxes, scores, class_logits, max_output_size, iou_threshold=0.5, score_threshold=0.05,
@@ -56,7 +70,8 @@ def nms(boxes, scores, class_logits, max_output_size, iou_threshold=0.5, score_t
     :param name:
     :return: 检测边框、边框得分、边框类别
     """
-    indices = tf.image.non_max_suppression(boxes, scores, max_output_size, iou_threshold, score_threshold, name)  # 一维索引
+    indices = tf.image.non_max_suppression(boxes, scores, max_output_size, iou_threshold, score_threshold,
+                                           name)  # 一维索引
     output_boxes = tf.gather(boxes, indices)  # (M,4)
     class_scores = tf.expand_dims(tf.gather(scores, indices), axis=1)  # 扩展到二维(M,1)
     class_logits = tf.gather(class_logits, indices)
@@ -89,20 +104,19 @@ class TextProposal(layers.Layer):
         应用边框回归，并使用nms生成最后的边框
         :param inputs:
         inputs[0]: deltas, [batch_size,N,(dy,dh)]   N是所有的anchors数量
-        inputs[1]: class logits [batch_size,N,num_classes]
-        inputs[2]: anchors [batch_size,N,(y1,x1,y2,x2)]
-        inputs[3]: valid_anchors_indices [batch_size, anchor_num]
+        inputs[1]: side_deltas, [batch_size,N,(dx)]   N是所有的anchors数量
+        inputs[2]: class logits [batch_size,N,num_classes]
+        inputs[3]: anchors [batch_size,N,(y1,x1,y2,x2)]
+        inputs[4]: valid_anchors_indices [batch_size, anchor_num]
         :param kwargs:
         :return:
         """
-        deltas = inputs[0]
-        class_logits = inputs[1]
-        anchors = inputs[2]
-        val_anchors_indices = inputs[3]
+        deltas, side_deltas, class_logits, anchors, val_anchors_indices = inputs
         # 只看有效anchor的预测结果
-        deltas, class_logits = tf_utils.batch_slice([deltas, class_logits, val_anchors_indices],
-                                                    lambda x, y, z: get_valid_predicts(x, y, z),
-                                                    self.batch_size)
+        deltas, side_deltas, class_logits = tf_utils.batch_slice(
+            [deltas, side_deltas, class_logits, val_anchors_indices],
+            lambda x, y, z, u: get_valid_predicts(x, y, z, u),
+            self.batch_size)
         # 转为分类评分
         class_scores = tf.nn.softmax(logits=class_logits, axis=-1)  # [N,num_classes]
         fg_scores = tf.reduce_max(class_scores[..., 1:], axis=-1)  # 第一类为背景 (N,)
@@ -119,7 +133,9 @@ class TextProposal(layers.Layer):
         # outputs = tf.map_fn(fn=lambda x: nms(*x, **options),
         #                     elems=[proposals, fg_scores, class_logits],
         #                     dtype=[tf.float32] * 3)
-        proposals = tf_utils.batch_slice([deltas, anchors], lambda x, y: apply_regress(x, y), self.batch_size)
+        proposals = tf_utils.batch_slice([deltas, side_deltas, anchors],
+                                         lambda x, y, z: apply_regress(x, y, z),
+                                         self.batch_size)
 
         outputs = tf_utils.batch_slice([proposals, fg_scores, class_logits],
                                        lambda x, y, z: nms(x, y, z,

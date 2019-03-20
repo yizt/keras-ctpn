@@ -12,7 +12,7 @@ import tensorflow as tf
 from .base_net import resnet50
 from .anchor import CtpnAnchor
 from .target import CtpnTarget
-from .losses import ctpn_cls_loss, ctpn_regress_loss
+from .losses import ctpn_cls_loss, ctpn_regress_loss, side_regress_loss
 from .text_proposals import TextProposal
 
 
@@ -42,13 +42,16 @@ def ctpn_net(config, stage='train'):
                              positive_ratios=config.ANCHOR_POSITIVE_RATIO,
                              max_gt_num=config.MAX_GT_INSTANCES,
                              name='ctpn_target')([gt_boxes, gt_class_ids, anchors, valid_anchors_indices])
-        deltas, class_ids, anchors_indices, side_deltas = targets[:4]
+        deltas, class_ids, anchors_indices = targets[:3]
         # 损失函数
         regress_loss = layers.Lambda(lambda x: ctpn_regress_loss(*x),
                                      name='ctpn_regress_loss')([predict_deltas, deltas, anchors_indices])
+        side_loss = layers.Lambda(lambda x: side_regress_loss(*x),
+                                  name='side_regress_loss')([predict_side_deltas, deltas, anchors_indices])
         cls_loss = layers.Lambda(lambda x: ctpn_cls_loss(*x),
                                  name='ctpn_class_loss')([predict_class_logits, class_ids, anchors_indices])
-        model = Model(inputs=[input_image, gt_boxes, gt_class_ids], outputs=[regress_loss, cls_loss])
+        model = Model(inputs=[input_image, gt_boxes, gt_class_ids],
+                      outputs=[regress_loss, cls_loss, side_loss])
 
     else:
         text_boxes, text_scores, text_class_logits = TextProposal(config.IMAGES_PER_GPU,
@@ -56,7 +59,7 @@ def ctpn_net(config, stage='train'):
                                                                   output_box_num=config.TEXT_PROPOSALS_MAX_NUM,
                                                                   iou_threshold=config.TEXT_PROPOSALS_NMS_THRESH,
                                                                   name='text_proposals')(
-            [predict_deltas, predict_class_logits, anchors, valid_anchors_indices])
+            [predict_deltas, predict_side_deltas, predict_class_logits, anchors, valid_anchors_indices])
         model = Model(inputs=input_image, outputs=[text_boxes, text_scores, text_class_logits])
     return model
 
@@ -89,9 +92,9 @@ def ctpn(base_features, num_anchors, rnn_units=128, fc_units=512):
     # 中心点垂直坐标和高度回归
     predict_deltas = layers.Conv2D(2 * num_anchors, kernel_size=(1, 1), name='deltas')(fc_output)
     predict_deltas = layers.Reshape(target_shape=(-1, 2), name='deltas_reshape')(predict_deltas)
-    # 侧边精调
-    predict_side_deltas = layers.Conv2D(2 * num_anchors, kernel_size=(1, 1), name='side_deltas')(fc_output)
-    predict_side_deltas = layers.Reshape(target_shape=(-1, 2), name='side_deltas_reshape')(
+    # 侧边精调(只需要预测x偏移即可)
+    predict_side_deltas = layers.Conv2D(num_anchors, kernel_size=(1, 1), name='side_deltas')(fc_output)
+    predict_side_deltas = layers.Reshape(target_shape=(-1, 1), name='side_deltas_reshape')(
         predict_side_deltas)
     return class_logits, predict_deltas, predict_side_deltas
 
