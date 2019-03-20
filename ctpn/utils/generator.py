@@ -30,11 +30,10 @@ def generator(image_annotations, batch_size, image_shape, width_stride, max_gt_n
                                                                       image_shape,
                                                                       width_stride,
                                                                       box_min_height=8)
-
             batch_images.append(image)
             batch_images_meta.append(image_meta)
-
-            batch_gt_boxes.append(np_utils.pad_to_fixed_size(gt_boxes, max_gt_num))
+            gt_boxes = np_utils.pad_to_fixed_size(gt_boxes[:max_gt_num], max_gt_num)  # GT boxes数量防止超出阈值
+            batch_gt_boxes.append(gt_boxes)
             batch_gt_class_ids.append(
                 np_utils.pad_to_fixed_size(np.expand_dims(np.array(class_ids), axis=1), max_gt_num))
 
