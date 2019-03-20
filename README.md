@@ -10,7 +10,7 @@
 
 ## 说明
 
-​         本工程是keras实现的[CPTN: Detecting Text in Natural Image with Connectionist Text Proposal Network](https://arxiv.org/abs/1609.03605) .
+​         本工程是keras实现的[CPTN: Detecting Text in Natural Image with Connectionist Text Proposal Network](https://arxiv.org/abs/1609.03605) . 本工程实现主要参考了[keras-faster-rcnn](https://github.com/yizt/keras-faster-rcnn) ; 并在ICDAR2015和ICDAR2017数据集上训练和测试。
 
 ​         cptn论文翻译:[CTPN.md](https://github.com/yizt/cv-papers/blob/master/CTPN.md)
 
@@ -21,6 +21,10 @@ a.骨干网络使用的是resnet50
 b.训练输入图像大小为608*608; 将图像的长边缩放到608,保持长宽比,短边padding
 
 c.batch_size 为4, 每张图像训练256个anchor,正负样本比为1:1
+
+d.分类、边框回归以及侧边改善的损失函数权重为1:1:1;原论文中是1:1:2
+
+e.侧边改善与边框回归选择一样的正样本anchor;原文中应该是分开选择的
 
 
 
@@ -120,7 +124,8 @@ python train.py --epochs 50
 
 ## toDoList
 
-1. 侧边改善
+1. 侧边改善(已完成)
 2. ICDAR2017数据集训练
 3. 检测文本行坐标映射到原图
 4. 精度评估
+
