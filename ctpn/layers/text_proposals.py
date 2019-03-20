@@ -10,13 +10,13 @@ import tensorflow as tf
 from ..utils import tf_utils
 
 
-def apply_regress(deltas, side_deltas, anchors, use_side=False):
+def apply_regress(deltas, side_deltas, anchors, use_side_refine=False):
     """
     应用回归目标到边框, 垂直中心点偏移和高度缩放
     :param deltas: 回归目标[N,(dy,dh,)]
     :param side_deltas: 回归目标[N,(dx)]
     :param anchors: anchor boxes[N,(y1,x1,y2,x2)]
-    :param use_side: 是否应用侧边回归
+    :param use_side_refine: 是否应用侧边回归
     :return:
     """
     # 高度和宽度
@@ -45,7 +45,7 @@ def apply_regress(deltas, side_deltas, anchors, use_side=False):
     x1 = cx - w * 0.5
     x2 = cx + w * 0.5
 
-    if use_side:
+    if use_side_refine:
         return tf.stack([y1, x1, y2, x2], axis=1)
     else:
         return tf.stack([y1, anchors[:, 1], y2, anchors[:, 3]], axis=1)
@@ -86,17 +86,20 @@ class TextProposal(layers.Layer):
     生成候选框
     """
 
-    def __init__(self, batch_size, score_threshold=0.7, output_box_num=500, iou_threshold=0.3, **kwargs):
+    def __init__(self, batch_size, score_threshold=0.7, output_box_num=500, iou_threshold=0.3,
+                 use_side_refine=False, **kwargs):
         """
 
         :param score_threshold: 分数阈值
         :param output_box_num: 生成proposal 边框数量
         :param iou_threshold: nms iou阈值
+        :param use_side_refine : 预测时是否使用侧边改善
         """
         self.batch_size = batch_size
         self.score_threshold = score_threshold
         self.output_box_num = output_box_num
         self.iou_threshold = iou_threshold
+        self.use_side_refine = use_side_refine
         super(TextProposal, self).__init__(**kwargs)
 
     def call(self, inputs, **kwargs):
@@ -134,7 +137,7 @@ class TextProposal(layers.Layer):
         #                     elems=[proposals, fg_scores, class_logits],
         #                     dtype=[tf.float32] * 3)
         proposals = tf_utils.batch_slice([deltas, side_deltas, anchors],
-                                         lambda x, y, z: apply_regress(x, y, z),
+                                         lambda x, y, z: apply_regress(x, y, z,self.use_side_refine),
                                          self.batch_size)
 
         outputs = tf_utils.batch_slice([proposals, fg_scores, class_logits],

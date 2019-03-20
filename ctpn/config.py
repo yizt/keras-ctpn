@@ -10,7 +10,7 @@
 class Config(object):
     IMAGES_PER_GPU = 4
     IMAGE_SHAPE = (608, 608, 3)
-    MAX_GT_INSTANCES = 500
+    MAX_GT_INSTANCES = 1000
 
     NUM_CLASSES = 1 + 1  #
     CLASS_MAPPING = {'bg': 0,
@@ -45,8 +45,11 @@ class Config(object):
 
     LOSS_WEIGHTS = {
         "ctpn_regress_loss": 1.,
-        "ctpn_class_loss": 1
+        "ctpn_class_loss": 1,
+        "side_regress_loss": 1
     }
+    # 是否使用侧边改善
+    USE_SIDE_REFINE = True
     # 预训练模型
     PRE_TRAINED_WEIGHT = '/opt/pretrained_model/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5'
 

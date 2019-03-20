@@ -58,6 +58,7 @@ def ctpn_net(config, stage='train'):
                                                                   score_threshold=config.TEXT_PROPOSALS_MIN_SCORE,
                                                                   output_box_num=config.TEXT_PROPOSALS_MAX_NUM,
                                                                   iou_threshold=config.TEXT_PROPOSALS_NMS_THRESH,
+                                                                  use_side_refine=config.USE_SIDE_REFINE,
                                                                   name='text_proposals')(
             [predict_deltas, predict_side_deltas, predict_class_logits, anchors, valid_anchors_indices])
         model = Model(inputs=input_image, outputs=[text_boxes, text_scores, text_class_logits])
