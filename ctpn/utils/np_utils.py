@@ -7,6 +7,7 @@
 """
 
 import numpy as np
+from shapely.geometry import Polygon
 
 
 def pad_to_fixed_size(input_np, fixed_size):
@@ -141,6 +142,48 @@ def non_max_suppression(boxes, scores, iou_threshold):
         ixs = np.delete(ixs, remove_ixs)
         ixs = np.delete(ixs, 0)
     return np.array(pick, dtype=np.int32)
+
+
+def quadrangle_iou(quadrangle_a, quadrangle_b):
+    """
+    四边形iou
+    :param quadrangle_a: 一维numpy数组[(x1,y1,x2,y2,x3,y3,x4,y4)]
+    :param quadrangle_b: 一维numpy数组[(x1,y1,x2,y2,x3,y3,x4,y4)]
+    :return:
+    """
+    a = Polygon(quadrangle_a.reshape((4, 2)))
+    b = Polygon(quadrangle_b.reshape((4, 2)))
+    if not a.is_valid or not b.is_valid:
+        return 0
+    inter = Polygon(a).intersection(Polygon(b)).area
+    union = a.area + b.area - inter
+    if union == 0:
+        return 0
+    else:
+        return inter / union
+
+
+def quadrangle_nms(quadrangles, scores, iou_threshold):
+    """
+    四边形nms
+    :param quadrangles: 四边形坐标，二维numpy数组[n,(x1,y1,x2,y2,x3,y3,x4,y4)]
+    :param scores: 四边形得分,[n]
+    :param iou_threshold: iou阈值
+    :return:
+    """
+    order = np.argsort(scores)[::-1]
+    keep = []
+    while order.size > 0:
+        # 选择得分最高的
+        i = order[0]
+        keep.append(i)
+        # 逐个计算iou
+        overlap = np.array([quadrangle_iou(quadrangles[i], quadrangles[t]) for t in order[1:]])
+        # 小于阈值的,用于下一个极值点选择
+        indices = np.where(overlap < iou_threshold)[0]
+        order = order[indices + 1]
+
+    return keep
 
 
 def main():

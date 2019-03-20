@@ -29,7 +29,7 @@ class TextDetector:
 
     def detect(self, text_proposals, scores, image_shape, window):
         """
-
+        检测文本行
         :param text_proposals: 文本提议框
         :param scores: 文本框得分
         :param image_shape: 图像形状
@@ -43,10 +43,10 @@ class TextDetector:
         text_lines = text_lines[keep_indices]
         text_lines = filter_out_of_window(text_lines, window)
 
-        # nms for text lines
+        # 文本行nms
         if text_lines.shape[0] != 0:
-            keep_indices = np_utils.non_max_suppression(text_lines[:, :4], text_lines[:, 4],
-                                                        self.config.TEXT_LINE_NMS_THRESH)
+            keep_indices = np_utils.quadrangle_nms(text_lines[:, :8], text_lines[:, 8],
+                                                   self.config.TEXT_LINE_NMS_THRESH)
             text_lines = text_lines[keep_indices]
 
         return text_lines
