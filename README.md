@@ -38,7 +38,7 @@ b. 预训练模型下载
 
 ​    ICDAR2015训练集上训练好的模型下载地址：[ctpn.h5](https://pan.baidu.com/s/1U7wErHzzwQxWkssAAp50zQ) 提取码:kqso
 
-​    ICDAR2017训练集上训练好的模型下载地址  [ctpn.025.h5](https://pan.baidu.com/s/1hyG_nWch-Omtd2U1m6sDVQ) 提取码:rpsk
+​    ICDAR2017训练集上训练好的模型下载地址：[ctpn.025.h5](https://pan.baidu.com/s/1hyG_nWch-Omtd2U1m6sDVQ) 提取码:rpsk
 
 c.修改配置类config.py中如下属性
 
