@@ -8,6 +8,7 @@
 import skimage
 from skimage import io, transform
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def load_image(image_path):
@@ -16,10 +17,13 @@ def load_image(image_path):
     :param image_path: 图像路径
     :return: [h,w,3] numpy数组
     """
-    image = io.imread(image_path)
+    image = plt.imread(image_path)
     # 灰度图转为RGB
-    if image.ndim == 1:
-        image = skimage.color.gray2rgb(image)
+    if len(image.shape) == 2:
+        image = np.expand_dims(image, axis=2)
+        image = np.tile(image, (1, 1, 3))
+    elif image.shape[-1] == 1:
+        image = skimage.color.gray2rgb(image)  # io.imread 报ValueError: Input image expected to be RGB, RGBA or gray
     # 删除alpha通道
     return image[..., :3]
 
