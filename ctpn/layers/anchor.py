@@ -22,18 +22,17 @@ def generate_anchors(heights, width):
     return np.stack([-0.5 * h, -0.5 * w, 0.5 * h, 0.5 * w], axis=1)
 
 
-def shift(shape, strides, base_anchors):
+def shift(shape, stride, base_anchors):
     """
     根据feature map的长宽，生成所有的anchors
     :param shape: （H,W)
-    :param strides: 步长
+    :param stride: 步长
     :param base_anchors:所有的基准anchors，(anchor_num,4)
     :return:
     """
     H, W = shape[0], shape[1]
-    print("shape:{}".format(shape))
-    ctr_x = (tf.cast(tf.range(W), tf.float32) + tf.constant(0.5, dtype=tf.float32)) * strides
-    ctr_y = (tf.cast(tf.range(H), tf.float32) + tf.constant(0.5, dtype=tf.float32)) * strides
+    ctr_x = (tf.cast(tf.range(W), tf.float32) + tf.constant(0.5, dtype=tf.float32)) * stride
+    ctr_y = (tf.cast(tf.range(H), tf.float32) + tf.constant(0.5, dtype=tf.float32)) * stride
 
     ctr_x, ctr_y = tf.meshgrid(ctr_x, ctr_y)
 
@@ -51,14 +50,19 @@ def shift(shape, strides, base_anchors):
     return tf.reshape(anchors, [-1, 4])
 
 
-def filter_out_of_bound_boxes(boxes, shape):
+def filter_out_of_bound_boxes(boxes, feature_shape, stride):
     """
     过滤图像边框外的anchor
     :param boxes: [n,y1,x1,y2,x2]
-    :param shape: tuple
+    :param feature_shape: 特征图的长宽 [h,w]
+    :param stride: 网络步长
     :return:
     """
-    h, w = list(shape)[:2]
+    # 图像原始长宽为特征图长宽*步长
+    h, w = feature_shape[0], feature_shape[1]
+    h = tf.cast(h * stride, tf.float32)
+    w = tf.cast(w * stride, tf.float32)
+
     valid_boxes_tag = tf.logical_and(tf.logical_and(tf.logical_and(boxes[:, 0] >= 0,
                                                                    boxes[:, 1] >= 0),
                                                     boxes[:, 2] <= h),
@@ -69,17 +73,16 @@ def filter_out_of_bound_boxes(boxes, shape):
 
 
 class CtpnAnchor(keras.layers.Layer):
-    def __init__(self, heights, width, strides, image_shape, **kwargs):
+    def __init__(self, heights, width, stride, **kwargs):
         """
         :param heights: 高度列表
         :param width: 宽度，数值，如：16
-        :param strides: 步长,一般为base_size的四分之一
+        :param stride: 步长,
         :param image_shape: tuple(H,W,C)
         """
         self.heights = heights
         self.width = width
-        self.strides = strides
-        self.image_shape = image_shape
+        self.stride = stride
         # base anchors数量
         self.num_anchors = None  # 初始化值
         super(CtpnAnchor, self).__init__(**kwargs)
@@ -97,8 +100,8 @@ class CtpnAnchor(keras.layers.Layer):
 
         base_anchors = generate_anchors(self.heights, self.width)
         # print("len(base_anchors):".format(len(base_anchors)))
-        anchors = shift(features_shape[1:3], self.strides, base_anchors)
-        anchors, valid_anchors_indices = filter_out_of_bound_boxes(anchors, self.image_shape)
+        anchors = shift(features_shape[1:3], self.stride, base_anchors)
+        anchors, valid_anchors_indices = filter_out_of_bound_boxes(anchors, features_shape[1:3], self.stride)
         self.num_anchors = tf.shape(anchors)[0]
         # 扩展第一维，batch_size;每个样本都有相同的anchors
         anchors = tf.tile(tf.expand_dims(anchors, axis=0), [features_shape[0], 1, 1])

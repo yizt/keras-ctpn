@@ -34,7 +34,7 @@ def ctpn_net(config, stage='train'):
 
     # anchors生成
     anchors, valid_anchors_indices = CtpnAnchor(config.ANCHORS_HEIGHT, config.ANCHORS_WIDTH, config.NET_STRIDE,
-                                                config.IMAGE_SHAPE, name='gen_ctpn_anchors')(base_features)
+                                                name='gen_ctpn_anchors')(base_features)
 
     if stage == 'train':
         targets = CtpnTarget(config.IMAGES_PER_GPU,
