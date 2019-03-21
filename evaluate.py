@@ -14,13 +14,16 @@ from ctpn.utils import image_utils, file_utils, np_utils
 from ctpn.utils.detector import TextDetector
 from ctpn.config import cur_config as config
 from ctpn.layers import models
+import datetime
 
 
 def generator(image_path_list, image_shape):
-    for image_path in image_path_list:
+    for i, image_path in enumerate(image_path_list):
         image, image_meta, _, _ = image_utils.load_image_gt(np.random.randint(10),
                                                             image_path,
                                                             image_shape[0])
+        if i % 200 == 0:
+            print("开始评估第 {} 张图像".format(i))
         yield {"input_image": np.asarray([image]),
                "input_image_meta": np.asarray([image_meta])}
 
@@ -39,10 +42,13 @@ def main(args):
     m.load_weights(config.WEIGHT_PATH, by_name=True)
 
     # 预测
+    start_time = datetime.datetime.now()
     gen = generator(image_path_list, config.IMAGE_SHAPE)
     text_boxes, text_scores, image_metas = m.predict_generator(generator=gen,
                                                                steps=len(image_path_list),
                                                                use_multiprocessing=True)
+    end_time = datetime.datetime.now()
+    print("======完成{}张图像评估，耗时:{} 秒".format(len(image_path_list), end_time-start_time))
     # 去除padding
     text_boxes = [np_utils.remove_pad(text_box) for text_box in text_boxes]
     text_scores = [np_utils.remove_pad(text_score)[:, 0] for text_score in text_scores]
