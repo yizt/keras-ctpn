@@ -12,7 +12,11 @@
 
 ​         本工程是keras实现的[CPTN: Detecting Text in Natural Image with Connectionist Text Proposal Network](https://arxiv.org/abs/1609.03605) . 本工程实现主要参考了[keras-faster-rcnn](https://github.com/yizt/keras-faster-rcnn) ; 并在ICDAR2015和ICDAR2017数据集上训练和测试。
 
+​         工程地址: [keras-ctpn](https://github.com/yizt/keras-ctpn)
+
 ​         cptn论文翻译:[CTPN.md](https://github.com/yizt/cv-papers/blob/master/CTPN.md)
+
+
 
 关键点说明:
 
@@ -25,6 +29,8 @@ c.batch_size 为4, 每张图像训练256个anchor,正负样本比为1:1
 d.分类、边框回归以及侧边改善的损失函数权重为1:1:1;原论文中是1:1:2
 
 e.侧边改善与边框回归选择一样的正样本anchor;原文中应该是分开选择的
+
+f. 侧边改善还是有效果的(注:网上很多人说没有啥效果)
 
 
 
@@ -40,9 +46,9 @@ git clone https://github.com/yizt/keras-ctpn
 
 b. 预训练模型下载
 
-​    ICDAR2015训练集上训练好的模型下载地址：[ctpn.h5](https://pan.baidu.com/s/1U7wErHzzwQxWkssAAp50zQ) 提取码:kqso
+​    ICDAR2015训练集上训练好的模型下载地址：[ctpn.h5](https://pan.baidu.com/s/10LAyfh2pvE_ljXMYLe9gFw) 提取码:7vr8
 
-​    ICDAR2017训练集上训练好的模型下载地址：[ctpn.025.h5](https://pan.baidu.com/s/1hyG_nWch-Omtd2U1m6sDVQ) 提取码:rpsk
+​    ICDAR2017训练集上训练好的模型下载地址：[ctpn.050.h5](https://pan.baidu.com/s/1Wn0MY8DJqEwQyVcw0MH7Uw) 提取码:oy15
 
 c.修改配置类config.py中如下属性
 
@@ -106,19 +112,24 @@ python train.py --epochs 50
 
 ### ICDAR2015
 
-![](image_examples/examples.4.png)
+#### 带侧边改善
 
-![](image_examples/examples.5.png)
+![](image_examples/icdar2015/img_8.1.jpg)
+
+![](image_examples/icdar2015/img_200.1.jpg)
+
+#### 不带侧边改善
+![](image_examples/icdar2015/img_8.0.jpg)
+
+![](image_examples/icdar2015/img_200.0.jpg)
+
 
 ### ICDAR2017
 
-​          由于ICDAR2017测试集还未下载完，任然是ICDAR2015的测试样例
 
-![](image_examples/examples.2.png)
+![](image_examples/icdar2017/ts_img_01000.1.jpg)
 
-
-
-![](image_examples/examples.6.png)
+![](image_examples/icdar2017/ts_img_01001.1.jpg)
 
 
 
@@ -128,4 +139,3 @@ python train.py --epochs 50
 2. ICDAR2017数据集训练
 3. 检测文本行坐标映射到原图
 4. 精度评估
-
