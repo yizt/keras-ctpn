@@ -24,6 +24,10 @@ def load_image(image_path):
         image = np.tile(image, (1, 1, 3))
     elif image.shape[-1] == 1:
         image = skimage.color.gray2rgb(image)  # io.imread 报ValueError: Input image expected to be RGB, RGBA or gray
+    # 标准化为0~255之间
+    if image.dtype == np.float32:
+        image *= 255
+        image = image.astype(np.uint8)
     # 删除alpha通道
     return image[..., :3]
 
