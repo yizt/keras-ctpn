@@ -73,8 +73,8 @@ def filter_out_of_window(text_lines, window):
     min_y = np.min(quadrilaterals[:, :, 1], axis=1)
     max_y = np.max(quadrilaterals[:, :, 1], axis=1)
     # 窗口内的text_lines
-    indices = np.where(np.logical_and(np.logical_and(np.logical_and(min_x < x2,
-                                                                    max_x > x1),
-                                                     min_y < y2),
-                                      max_y > y1))
+    indices = np.where(np.logical_and(np.logical_and(np.logical_and(min_x >= x1,
+                                                                    max_x <= x2),
+                                                     min_y >= y1),
+                                      max_y <= y2))
     return text_lines[indices]
