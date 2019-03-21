@@ -27,10 +27,7 @@ def main(args):
         config.WEIGHT_PATH = args.weight_path
     config.IMAGES_PER_GPU = 1
     # 加载图片
-    image, image_meta, _, _ = image_utils.load_image_gt(np.random.randint(10),
-                                                        args.image_path,
-                                                        config.IMAGE_SHAPE[0],
-                                                        None)
+    image = image_utils.load_image(args.image_path)
     # 加载模型
     m = models.ctpn_net(config, 'test')
     m.load_weights(config.WEIGHT_PATH, by_name=True)
@@ -42,23 +39,21 @@ def main(args):
     text_scores = np_utils.remove_pad(text_scores[0])[:, 0]
 
     # 文本行检测器
-    image_meta = image_utils.parse_image_meta(image_meta)
     detector = TextDetector(config)
-    text_lines = detector.detect(text_boxes, text_scores, config.IMAGE_SHAPE, image_meta['window'])
-    # print("text_lines:{}".format(text_lines))
+    shape = image.shape
+    window = np.array([0, 0, shape[0], shape[1]], np.float32)  # [0,0,h,w]
+    text_lines = detector.detect(text_boxes, text_scores, image.shape, window)
     # 可视化保存图像
     boxes_num = 15
     fig = plt.figure(figsize=(16, 16))
     ax = fig.add_subplot(1, 1, 1)
-
     visualize.display_polygons(image, text_lines[:boxes_num, :8], text_lines[:boxes_num, 8],
                                ax=ax)
     image_name = os.path.basename(args.image_path)
     fig.savefig('{}.{}.jpg'.format(os.path.splitext(image_name)[0], int(config.USE_SIDE_REFINE)))
 
-
-if __name__ == '__main__':
-    parse = argparse.ArgumentParser()
+    if __name__ == '__main__':
+        parse = argparse.ArgumentParser()
     parse.add_argument("--image_path", type=str, help="image path")
     parse.add_argument("--weight_path", type=str, default=None, help="weight path")
     parse.add_argument("--use_side_refine", type=int, default=1, help="1: use side refine; 0 not use")
