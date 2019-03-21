@@ -62,7 +62,11 @@ d. 检测文本
 python predict.py --image_path image_3.jpg
 ```
 
+## 评估
 
+```shell
+python evaluate.py --weight_path /tmp/ctpn.140.h5 --image_dir /opt/dataset/OCR/ICDAR_2015/test_images/ --output_dir /tmp/output_2015/
+```
 
 ## 训练
 
