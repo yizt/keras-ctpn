@@ -36,7 +36,7 @@ def main(args):
     # m.summary()
 
     # 模型预测
-    text_boxes, text_scores, _ = m.predict(np.array([image]))
+    text_boxes, text_scores, _ = m.predict([np.array([image]), np.array([image_meta])])
     text_boxes = np_utils.remove_pad(text_boxes[0])
     text_scores = np_utils.remove_pad(text_scores[0])[:, 0]
 

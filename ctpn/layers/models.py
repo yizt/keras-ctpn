@@ -23,7 +23,7 @@ def ctpn_net(config, stage='train'):
     # gt_class_ids = Input(batch_shape=(config.IMAGES_PER_GPU, config.MAX_GT_INSTANCES, 2), name='gt_class_ids')
     # gt_boxes = Input(batch_shape=(config.IMAGES_PER_GPU, config.MAX_GT_INSTANCES, 5), name='gt_boxes')
     input_image = Input(shape=config.IMAGE_SHAPE, name='input_image')
-    input_image_meta = Input(shape=(12, 1), name='input_image_meta')
+    input_image_meta = Input(shape=(12,), name='input_image_meta')
     gt_class_ids = Input(shape=(config.MAX_GT_INSTANCES, 2), name='gt_class_ids')
     gt_boxes = Input(shape=(config.MAX_GT_INSTANCES, 5), name='gt_boxes')
 
@@ -61,7 +61,8 @@ def ctpn_net(config, stage='train'):
                                                                   use_side_refine=config.USE_SIDE_REFINE,
                                                                   name='text_proposals')(
             [predict_deltas, predict_side_deltas, predict_class_logits, anchors, valid_anchors_indices])
-        model = Model(inputs=input_image, outputs=[text_boxes, text_scores, text_class_logits])
+        image_meta = layers.Lambda(lambda x: x)(input_image_meta)  # 原样返回
+        model = Model(inputs=[input_image, input_image_meta], outputs=[text_boxes, text_scores, image_meta])
     return model
 
 
