@@ -42,7 +42,7 @@ def apply_regress(deltas, side_deltas, anchors, use_side_refine=False):
     # 转为y1,x1,y2,x2
     y1 = cy - h * 0.5
     y2 = cy + h * 0.5
-    x1 = cx - w * 0.5
+    x1 = tf.maximum(cx - w * 0.5, 0.)  # 限制在窗口内,修复后继节点找不到对应的前驱节点
     x2 = cx + w * 0.5
 
     if use_side_refine:
@@ -137,7 +137,7 @@ class TextProposal(layers.Layer):
         #                     elems=[proposals, fg_scores, class_logits],
         #                     dtype=[tf.float32] * 3)
         proposals = tf_utils.batch_slice([deltas, side_deltas, anchors],
-                                         lambda x, y, z: apply_regress(x, y, z,self.use_side_refine),
+                                         lambda x, y, z: apply_regress(x, y, z, self.use_side_refine),
                                          self.batch_size)
 
         outputs = tf_utils.batch_slice([proposals, fg_scores, class_logits],
