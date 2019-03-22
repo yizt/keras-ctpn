@@ -65,7 +65,7 @@ def main(args):
     for image_path, boxes in zip(image_path_list, text_lines):
         output_filename = os.path.splitext('res_' + os.path.basename(image_path))[0] + '.txt'
         with open(os.path.join(args.output_dir, output_filename), mode='w') as f:
-            for box in boxes.astype(np.uint8):
+            for box in boxes.astype(np.int32):
                 f.write("{},{},{},{},{},{},{},{}\r\n".format(box[0],
                                                              box[1],
                                                              box[2],
