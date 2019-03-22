@@ -48,7 +48,7 @@ def main(args):
                                                                steps=len(image_path_list),
                                                                use_multiprocessing=True)
     end_time = datetime.datetime.now()
-    print("======完成{}张图像评估，耗时:{} 秒".format(len(image_path_list), end_time-start_time))
+    print("======完成{}张图像评估，耗时:{} 秒".format(len(image_path_list), end_time - start_time))
     # 去除padding
     text_boxes = [np_utils.remove_pad(text_box) for text_box in text_boxes]
     text_scores = [np_utils.remove_pad(text_score)[:, 0] for text_score in text_scores]
@@ -58,14 +58,14 @@ def main(args):
     text_lines = [detector.detect(boxes, scores, config.IMAGE_SHAPE, window)
                   for boxes, scores, window in zip(text_boxes, text_scores, image_metas["window"])]
     # 还原检测文本行边框到原始图像坐标
-    text_lines = [image_utils.recover_detect_boxes(boxes, window, scale)
+    text_lines = [image_utils.recover_detect_quad(boxes, window, scale)
                   for boxes, window, scale in zip(text_lines, image_metas["window"], image_metas["scale"])]
 
     # 写入文档中
     for image_path, boxes in zip(image_path_list, text_lines):
-        output_filename = os.path.splitext(os.path.basename(image_path))[0] + '.txt'
+        output_filename = os.path.splitext('res_' + os.path.basename(image_path))[0] + '.txt'
         with open(os.path.join(args.output_dir, output_filename), mode='w') as f:
-            for box in boxes:
+            for box in boxes.astype(np.uint8):
                 f.write("{},{},{},{},{},{},{},{}\r\n".format(box[0],
                                                              box[1],
                                                              box[2],
