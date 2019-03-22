@@ -9,7 +9,7 @@
 
 class Config(object):
     IMAGES_PER_GPU = 4
-    IMAGE_SHAPE = (608, 608, 3)
+    IMAGE_SHAPE = (720, 720, 3)
     MAX_GT_INSTANCES = 1000
 
     NUM_CLASSES = 1 + 1  #
@@ -39,8 +39,8 @@ class Config(object):
     # 训练超参数
     LEARNING_RATE = 0.01
     LEARNING_MOMENTUM = 0.9
-    # Weight decay regularization
-    WEIGHT_DECAY = 0.0001,
+    # 权重衰减
+    WEIGHT_DECAY = 0.0005,
     GRADIENT_CLIP_NORM = 5.0
 
     LOSS_WEIGHTS = {
