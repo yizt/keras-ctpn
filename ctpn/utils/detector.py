@@ -37,7 +37,7 @@ class TextDetector:
         :return: text_lines; [ num,(y1,x1,y2,x2,score)]
         """
 
-        # scores = normalize(scores)  加上后，效果变差
+        scores = normalize(scores)  # 加上后，效果变差; 评估结果好像还是好一点
         text_lines = self.text_proposal_connector.get_text_lines(text_proposals, scores, image_shape)
         keep_indices = self.filter_boxes(text_lines)
         text_lines = text_lines[keep_indices]
