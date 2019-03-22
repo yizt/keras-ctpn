@@ -123,6 +123,10 @@ def ctpn_target_graph(gt_boxes, gt_cls, anchors, valid_anchors_indices, train_an
 
     # 合并两部分正样本索引
     positive_bool_matrix = tf.logical_or(gt_iou_max_bool, anchors_iou_max_bool)
+    # 获取最小的iou,用于度量
+    gt_match_min_iou = tf.reduce_min(tf.boolean_mask(iou, positive_bool_matrix), keep_dims=True)[0]  # 一维
+    gt_match_mean_iou = tf.reduce_mean(tf.boolean_mask(iou, positive_bool_matrix), keep_dims=True)[0]
+    # 正样本索引
     positive_indices = tf.where(positive_bool_matrix)  # 第一维gt索引号,第二维anchor索引号
     # before_sample_positive_indices = positive_indices  # 采样之前的正样本索引
     # 采样正样本
@@ -166,7 +170,8 @@ def ctpn_target_graph(gt_boxes, gt_cls, anchors, valid_anchors_indices, train_an
 
     return [deltas, class_ids, indices, tf.cast(  # 用作度量的必须是浮点类型
         gt_num, dtype=tf.float32), tf.cast(
-        positive_num, dtype=tf.float32), tf.cast(negative_num, dtype=tf.float32)]
+        positive_num, dtype=tf.float32), tf.cast(negative_num, dtype=tf.float32),
+            gt_match_min_iou, gt_match_mean_iou]
 
 
 class CtpnTarget(layers.Layer):
@@ -210,4 +215,6 @@ class CtpnTarget(layers.Layer):
                 (input_shape[0][0], self.train_anchors_num, 2),  # indices
                 (input_shape[0][0],),  # gt_num
                 (input_shape[0][0],),  # positive_num
-                (input_shape[0][0],)]  # negative_num
+                (input_shape[0][0],),  # negative_num
+                (input_shape[0][0], 1),
+                (input_shape[0][0], 1)]   # gt_match_min_iou

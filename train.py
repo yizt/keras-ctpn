@@ -59,6 +59,9 @@ def main(args):
     # 加载模型
     m = models.ctpn_net(config, 'train')
     models.compile(m, config, loss_names=['ctpn_regress_loss', 'ctpn_class_loss', 'side_regress_loss'])
+    # 增加度量
+    output = models.get_layer(m, 'ctpn_target').output
+    models.add_metrics(m, ['gt_num', 'pos_num', 'neg_num', 'gt_min_iou', 'gt_avg_iou'], output[-5:])
     if args.init_epochs > 0:
         m.load_weights(args.weight_path, by_name=True)
     else:

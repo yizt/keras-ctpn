@@ -101,7 +101,7 @@ def ctpn(base_features, num_anchors, rnn_units=128, fc_units=512):
     return class_logits, predict_deltas, predict_side_deltas
 
 
-def _get_layer(model, name):
+def get_layer(model, name):
     for layer in model.layers:
         if layer.name == name:
             return layer
@@ -125,7 +125,7 @@ def compile(keras_model, config, loss_names=[]):
     keras_model._per_input_losses = {}
 
     for name in loss_names:
-        layer = _get_layer(keras_model, name)
+        layer = get_layer(keras_model, name)
         if layer is None or layer.output in keras_model.losses:
             continue
         loss = (tf.reduce_mean(layer.output, keepdims=True)
@@ -149,7 +149,7 @@ def compile(keras_model, config, loss_names=[]):
     for name in loss_names:
         if name in keras_model.metrics_names:
             continue
-        layer = _get_layer(keras_model, name)
+        layer = get_layer(keras_model, name)
         if layer is None:
             continue
         keras_model.metrics_names.append(name)
@@ -169,4 +169,4 @@ def add_metrics(keras_model, metric_name_list, metric_tensor_list):
     """
     for name, tensor in zip(metric_name_list, metric_tensor_list):
         keras_model.metrics_names.append(name)
-        keras_model.metrics_tensors.append(tensor)
+        keras_model.metrics_tensors.append(tf.reduce_mean(tensor, keepdims=True))
