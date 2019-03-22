@@ -57,7 +57,7 @@ class TextProposalConnector:
             # 宽度方向最小值和最大值
             x_min = np.min(text_line_boxes[:, 1])
             x_max = np.max(text_line_boxes[:, 3])
-            # 文本框宽度的一般
+            # 文本框宽度的一半
             offset = (text_line_boxes[0, 3] - text_line_boxes[0, 1]) * 0.5
             # 使用一元线性函数求文本行左右两边高度边界
             lt_y, rt_y = self.fit_y(text_line_boxes[:, 1], text_line_boxes[:, 0], x_min - offset, x_max + offset)

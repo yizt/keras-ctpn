@@ -78,6 +78,7 @@ def main(args):
                     initial_epoch=args.init_epochs,
                     verbose=True,
                     callbacks=get_call_back(),
+                    workers=2,
                     use_multiprocessing=True)
 
     # 保存模型
