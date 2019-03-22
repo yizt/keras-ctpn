@@ -6,6 +6,7 @@
    date：          2019/3/13
 """
 from keras import backend, layers
+from keras.models import Model
 
 
 def identity_block(input_tensor, kernel_size, filters, stage, block):
@@ -124,34 +125,33 @@ def resnet50(image_input):
     x = layers.BatchNormalization(axis=bn_axis, name='bn_conv1')(x)
     x = layers.Activation('relu')(x)
     x = layers.MaxPooling2D((3, 3), strides=(2, 2))(x)
-    # stage 2
+    # block 2
     x = conv_block(x, 3, [64, 64, 256], stage=2, block='a', strides=(1, 1))
     x = identity_block(x, 3, [64, 64, 256], stage=2, block='b')
     x = identity_block(x, 3, [64, 64, 256], stage=2, block='c')
-    # stage 3
+    # # 确定精调层
+    no_train_model = Model(inputs=image_input, outputs=x)
+    for l in no_train_model.layers:
+        if isinstance(l, layers.BatchNormalization):
+            l.trainable = True
+        else:
+            l.trainable = False
+    # block 3
     x = conv_block(x, 3, [128, 128, 512], stage=3, block='a')
     x = identity_block(x, 3, [128, 128, 512], stage=3, block='b')
     x = identity_block(x, 3, [128, 128, 512], stage=3, block='c')
     x = identity_block(x, 3, [128, 128, 512], stage=3, block='d')
-    # stage 4
+    # block 4
     x = conv_block(x, 3, [256, 256, 1024], stage=4, block='a')
     x = identity_block(x, 3, [256, 256, 1024], stage=4, block='b')
     x = identity_block(x, 3, [256, 256, 1024], stage=4, block='c')
-    #x = identity_block(x, 3, [256, 256, 1024], stage=4, block='d')
-    #x = identity_block(x, 3, [256, 256, 1024], stage=4, block='e')
-    #x = identity_block(x, 3, [256, 256, 1024], stage=4, block='f')
+    x = identity_block(x, 3, [256, 256, 1024], stage=4, block='d')
+    x = identity_block(x, 3, [256, 256, 1024], stage=4, block='e')
+    x = identity_block(x, 3, [256, 256, 1024], stage=4, block='f')
     # stage 5
     # x = conv_block(x, 3, [512, 512, 2048], stage=5, block='a')
     # x = identity_block(x, 3, [512, 512, 2048], stage=5, block='b')
     # x = identity_block(x, 3, [512, 512, 2048], stage=5, block='c')
-
-    # # 确定精调层
-    # no_train_model = Model(inputs=img_input, outputs=x)
-    # for l in no_train_model.layers:
-    #     if isinstance(l, layers.BatchNormalization):
-    #         l.trainable = True
-    #     else:
-    #         l.trainable = False
 
     # model = Model(input, x, name='resnet50')
 
