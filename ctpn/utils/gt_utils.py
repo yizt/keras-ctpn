@@ -74,14 +74,14 @@ def get_xs_in_range(x_array, x_min, x_max):
     return xs
 
 
-def gen_gt_from_quadrilaterals(gt_quadrilaterals, input_gt_class_ids, image_shape, width_stride, box_min_height=3):
+def gen_gt_from_quadrilaterals(gt_quadrilaterals, input_gt_class_ids, image_shape, width_stride, box_min_size=3):
     """
     从gt 四边形生成，宽度固定的gt boxes
     :param gt_quadrilaterals: GT四边形坐标,[n,(x1,y1,x2,y2,x3,y3,x4,y4)]
     :param input_gt_class_ids: GT四边形类别，一般就是1 [n]
     :param image_shape:
     :param width_stride: 分割的步长，一般16
-    :param box_min_height: 分割后GT boxes的最小高度
+    :param box_min_size: 分割后GT boxes的最小尺寸
     :return:
             gt_boxes：[m,(y1,x1,y2,x2)]
             gt_class_ids: [m]
@@ -107,5 +107,6 @@ def gen_gt_from_quadrilaterals(gt_quadrilaterals, input_gt_class_ids, image_shap
     gt_class_ids = np.reshape(np.array(gt_class_ids), (-1,))
     # 过滤高度太小的边框
     height = gt_boxes[:, 2] - gt_boxes[:, 0]
-    indices = np.where(height >= box_min_height)
+    width = gt_boxes[:, 3] - gt_boxes[:, 1]
+    indices = np.where(np.logical_and(height >= box_min_size, width >= box_min_size))
     return gt_boxes[indices], gt_class_ids[indices]
