@@ -89,10 +89,11 @@ def crop_image(image, gt_window):
     h, w = list(image.shape)[:2]
     y1, x1, y2, x2 = gt_window
     gaps = np.array([y1, x1, h - y2, w - x2])
-    moves = [np.random.randint(gap) for gap in gaps]
-    crop_window = np.array([0, 0, h, w], np.int32)
-    crop_window -= np.array(moves)
-    return image[crop_window[0]:crop_window[2], crop_window[1]:crop_window[3]], crop_window
+    wy1 = min(np.random.randint(y1), h // 5)
+    wx1 = min(np.random.randint(x1), w // 5)
+    wy2 = h - min(np.random.randint(h - y2), h // 5)
+    wx2 = w - min(np.random.randint(w - x2), w // 5)
+    return image[wy1:wy2, wx1:wx2], [wy1,wx1,wy2,wx2]
 
 
 def resize_image(image, max_dim):
