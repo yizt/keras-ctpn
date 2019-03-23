@@ -42,6 +42,7 @@ def load_image_gt(image_id, image_path, output_size, gt_boxes=None,
     :param gt_boxes: GT 边框 [N,(y1,x1,y2,x2)]
     :param gt_quadrilaterals:
     :param horizontal_flip: 是否水平翻转
+    :param random_crop: 是否随机裁剪
     :return:
     image: (H,W,3)
     image_meta: 元数据信息，详见compose_image_meta
@@ -89,7 +90,7 @@ def crop_image(image, gt_window):
     y1, x1, y2, x2 = gt_window
     gaps = np.array([y1, x1, h - y2, w - x2])
     moves = [np.random.randint(gap) for gap in gaps]
-    crop_window = np.array([0, 0, h, w], np.float32)
+    crop_window = np.array([0, 0, h, w], np.int32)
     crop_window -= np.array(moves)
     return image[crop_window[0]:crop_window[2], crop_window[1]:crop_window[3]], crop_window
 
