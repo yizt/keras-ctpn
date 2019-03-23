@@ -108,5 +108,5 @@ def gen_gt_from_quadrilaterals(gt_quadrilaterals, input_gt_class_ids, image_shap
     # 过滤高度太小的边框
     height = gt_boxes[:, 2] - gt_boxes[:, 0]
     width = gt_boxes[:, 3] - gt_boxes[:, 1]
-    indices = np.where(np.logical_and(height >= box_min_size, width >= box_min_size))
+    indices = np.where(np.logical_and(height >= 8, width >= 2))
     return gt_boxes[indices], gt_class_ids[indices]
