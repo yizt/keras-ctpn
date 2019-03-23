@@ -25,7 +25,7 @@ def generator(image_annotations, batch_size, image_shape, width_stride, max_gt_n
                                                                                 image_shape[0],
                                                                                 gt_quadrilaterals=image_annotation[
                                                                                     'quadrilaterals'],
-                                                                                horizontal_flip=random.random() >= 0.5)
+                                                                                horizontal_flip=False)
             class_ids = image_annotation['labels']
             gt_boxes, class_ids = gt_utils.gen_gt_from_quadrilaterals(gt_quadrilaterals,
                                                                       class_ids,
