@@ -32,7 +32,7 @@ def load_image(image_path):
     return image[..., :3]
 
 
-def load_image_gt(image_id, image_path, output_size, gt_boxes=None, gt_quadrilaterals=None):
+def load_image_gt(image_id, image_path, output_size, gt_boxes=None, gt_quadrilaterals=None, horizontal_flip=False):
     """
     加载图像，生成训练输入大小的图像，并调整GT 边框，返回相关元数据信息
     :param image_id: 图像编号id
@@ -40,6 +40,7 @@ def load_image_gt(image_id, image_path, output_size, gt_boxes=None, gt_quadrilat
     :param output_size: 图像输出尺寸，及网络输入到高度或宽度(默认长宽相等)
     :param gt_boxes: GT 边框 [N,(y1,x1,y2,x2)]
     :param gt_quadrilaterals:
+    :param horizontal_flip: 是否水平翻转
     :return:
     image: (H,W,3)
     image_meta: 元数据信息，详见compose_image_meta
@@ -47,6 +48,8 @@ def load_image_gt(image_id, image_path, output_size, gt_boxes=None, gt_quadrilat
     """
     # 加载图像
     image = load_image(image_path)
+    if horizontal_flip:
+        image = image[:, ::-1, :]
     original_shape = image.shape
     # resize图像，并获取相关元数据信息
     image, window, scale, padding = resize_image(image, output_size)
@@ -58,6 +61,11 @@ def load_image_gt(image_id, image_path, output_size, gt_boxes=None, gt_quadrilat
     if gt_boxes is not None and gt_boxes.shape[0] > 0:
         gt_boxes = adjust_box(gt_boxes, padding, scale)
     if gt_quadrilaterals is not None and gt_quadrilaterals.shape[0] > 0:
+        if horizontal_flip:
+            gt_quadrilaterals[:, ::2] = original_shape[1]-gt_quadrilaterals[:, ::2]
+            lt_x, lt_y, rt_x, rt_y, rb_x, rb_y, lb_x, lb_y = np.split(gt_quadrilaterals, 8, axis=1)
+            gt_quadrilaterals = np.concatenate([rt_x, rt_y, lt_x, lt_y, lb_x, lb_y, rb_x, rb_y], axis=1)
+
         gt_quadrilaterals = adjust_quadrilaterals(gt_quadrilaterals, padding, scale)
 
     return image, image_meta, gt_boxes, gt_quadrilaterals

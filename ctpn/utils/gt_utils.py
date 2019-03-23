@@ -74,7 +74,7 @@ def get_xs_in_range(x_array, x_min, x_max):
     return xs
 
 
-def gen_gt_from_quadrilaterals(gt_quadrilaterals, input_gt_class_ids, image_shape, width_stride, box_min_height=8):
+def gen_gt_from_quadrilaterals(gt_quadrilaterals, input_gt_class_ids, image_shape, width_stride, box_min_height=3):
     """
     从gt 四边形生成，宽度固定的gt boxes
     :param gt_quadrilaterals: GT四边形坐标,[n,(x1,y1,x2,y2,x3,y3,x4,y4)]
