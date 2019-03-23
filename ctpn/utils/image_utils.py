@@ -32,7 +32,8 @@ def load_image(image_path):
     return image[..., :3]
 
 
-def load_image_gt(image_id, image_path, output_size, gt_boxes=None, gt_quadrilaterals=None, horizontal_flip=False):
+def load_image_gt(image_id, image_path, output_size, gt_boxes=None,
+                  gt_quadrilaterals=None, horizontal_flip=False, random_crop=False):
     """
     加载图像，生成训练输入大小的图像，并调整GT 边框，返回相关元数据信息
     :param image_id: 图像编号id
@@ -48,8 +49,25 @@ def load_image_gt(image_id, image_path, output_size, gt_boxes=None, gt_quadrilat
     """
     # 加载图像
     image = load_image(image_path)
+    # 随机裁剪
+    if random_crop:
+        min_x, max_x = np.min(gt_quadrilaterals[:, ::2]), np.max(gt_quadrilaterals[:, ::2])
+        min_y, max_y = np.min(gt_quadrilaterals[:, 1::2]), np.max(gt_quadrilaterals[:, 1::2])
+        image, crop_window = crop_image(image, [max_y, min_x, max_y, min_x])
+
+        # gt坐标偏移
+        if gt_quadrilaterals is not None and gt_quadrilaterals.shape[0] > 0:
+            gt_quadrilaterals[:, 1::2] -= crop_window[0]
+            gt_quadrilaterals[:, ::2] -= crop_window[1]
+    # 水平翻转
     if horizontal_flip:
         image = image[:, ::-1, :]
+        # gt翻转
+        if gt_quadrilaterals is not None and gt_quadrilaterals.shape[0] > 0:
+            gt_quadrilaterals[:, ::2] = image.shape[1] - gt_quadrilaterals[:, ::2]
+            lt_x, lt_y, rt_x, rt_y, rb_x, rb_y, lb_x, lb_y = np.split(gt_quadrilaterals, 8, axis=1)
+            gt_quadrilaterals = np.concatenate([rt_x, rt_y, lt_x, lt_y, lb_x, lb_y, rb_x, rb_y], axis=1)
+
     original_shape = image.shape
     # resize图像，并获取相关元数据信息
     image, window, scale, padding = resize_image(image, output_size)
@@ -61,14 +79,19 @@ def load_image_gt(image_id, image_path, output_size, gt_boxes=None, gt_quadrilat
     if gt_boxes is not None and gt_boxes.shape[0] > 0:
         gt_boxes = adjust_box(gt_boxes, padding, scale)
     if gt_quadrilaterals is not None and gt_quadrilaterals.shape[0] > 0:
-        if horizontal_flip:
-            gt_quadrilaterals[:, ::2] = original_shape[1]-gt_quadrilaterals[:, ::2]
-            lt_x, lt_y, rt_x, rt_y, rb_x, rb_y, lb_x, lb_y = np.split(gt_quadrilaterals, 8, axis=1)
-            gt_quadrilaterals = np.concatenate([rt_x, rt_y, lt_x, lt_y, lb_x, lb_y, rb_x, rb_y], axis=1)
-
         gt_quadrilaterals = adjust_quadrilaterals(gt_quadrilaterals, padding, scale)
 
     return image, image_meta, gt_boxes, gt_quadrilaterals
+
+
+def crop_image(image, gt_window):
+    h, w = list(image.shape)[:2]
+    y1, x1, y2, x2 = gt_window
+    gaps = np.array([y1, x1, h - y2, w - x2])
+    moves = [np.random.randint(gap) for gap in gaps]
+    crop_window = np.array([0, 0, h, w], np.float32)
+    crop_window -= np.array(moves)
+    return image[crop_window[0]:crop_window[2], crop_window[1]:crop_window[3]], crop_window
 
 
 def resize_image(image, max_dim):
