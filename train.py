@@ -9,7 +9,6 @@ import os
 import sys
 import tensorflow as tf
 import keras
-import numpy as np
 import argparse
 from keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau
 from ctpn.layers import models
@@ -40,10 +39,10 @@ def get_call_back():
 
     # 验证误差没有提升
     lr_reducer = ReduceLROnPlateau(monitor='loss',
-                                   factor=np.sqrt(0.1),
+                                   factor=0.1,
                                    cooldown=0,
-                                   patience=5,
-                                   min_lr=1e-8)
+                                   patience=10,
+                                   min_lr=0)
     log = TensorBoard(log_dir='log')
     return [lr_reducer, checkpoint, log]
 
@@ -76,7 +75,7 @@ def main(args):
 
     # 训练
     m.fit_generator(gen,
-                    steps_per_epoch=len(image_annotations) // config.IMAGES_PER_GPU,
+                    steps_per_epoch=len(image_annotations) // config.IMAGES_PER_GPU * 2,
                     epochs=args.epochs,
                     initial_epoch=args.init_epochs,
                     verbose=True,

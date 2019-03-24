@@ -45,7 +45,7 @@ def main(args):
     detector = TextDetector(config)
     text_lines = detector.detect(text_boxes, text_scores, config.IMAGE_SHAPE, image_meta['window'])
     # 可视化保存图像
-    boxes_num = 15
+    boxes_num = 30
     fig = plt.figure(figsize=(16, 16))
     ax = fig.add_subplot(1, 1, 1)
     visualize.display_polygons(image, text_lines[:boxes_num, :8], text_lines[:boxes_num, 8],
