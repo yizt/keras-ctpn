@@ -9,6 +9,7 @@ import skimage
 from skimage import io, transform
 import numpy as np
 import matplotlib.pyplot as plt
+import random
 
 
 def load_image(image_path):
@@ -51,11 +52,11 @@ def load_image_gt(image_id, image_path, output_size, gt_boxes=None,
     # 加载图像
     image = load_image(image_path)
     # 随机裁剪
-    if random_crop:
+    if random_crop and random.random() >= 0.5:
         min_x, max_x = np.min(gt_quadrilaterals[:, ::2]), np.max(gt_quadrilaterals[:, ::2])
         min_y, max_y = np.min(gt_quadrilaterals[:, 1::2]), np.max(gt_quadrilaterals[:, 1::2])
-        image, crop_window = crop_image(image, [max_y, min_x, max_y, min_x])
-
+        image, crop_window = crop_image(image, [min_y, min_x, max_y, max_x])
+        # print(image.shape,[min_y, min_x, max_y, max_x],crop_window)
         # gt坐标偏移
         if gt_quadrilaterals is not None and gt_quadrilaterals.shape[0] > 0:
             gt_quadrilaterals[:, 1::2] -= crop_window[0]
@@ -89,11 +90,11 @@ def crop_image(image, gt_window):
     h, w = list(image.shape)[:2]
     y1, x1, y2, x2 = gt_window
     gaps = np.array([y1, x1, h - y2, w - x2])
-    wy1 = min(np.random.randint(y1), h // 5)
-    wx1 = min(np.random.randint(x1), w // 5)
-    wy2 = h - min(np.random.randint(h - y2), h // 5)
-    wx2 = w - min(np.random.randint(w - x2), w // 5)
-    return image[wy1:wy2, wx1:wx2], [wy1,wx1,wy2,wx2]
+    wy1 = np.random.randint(min(y1+1, h // 5))
+    wx1 = np.random.randint(min(x1+1, w // 5))
+    wy2 = h - np.random.randint(min(h - y2 + 1, h // 5))
+    wx2 = w - np.random.randint(min(w - x2 + 1, w // 5))
+    return image[wy1:wy2, wx1:wx2], [wy1, wx1, wy2, wx2]
 
 
 def resize_image(image, max_dim):
