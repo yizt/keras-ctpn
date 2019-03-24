@@ -25,6 +25,7 @@ def main(args):
     if args.weight_path is not None:
         config.WEIGHT_PATH = args.weight_path
     config.IMAGES_PER_GPU = 1
+    config.IMAGE_SHAPE = (1024, 1024, 3)
     # 加载图片
     image, image_meta, _, _ = image_utils.load_image_gt(np.random.randint(10),
                                                         args.image_path,
