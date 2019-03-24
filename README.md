@@ -23,12 +23,12 @@
 
 ​         cptn论文翻译:[CTPN.md](https://github.com/yizt/cv-papers/blob/master/CTPN.md)
 
-效果：
+**效果**：
 
 ​        使用ICDAR2015的1000张图像训练在500张测试集上结果为：Recall: 37.07 % Precision: 42.94 % Hmean: 39.79 %;
 原文中的F值为61%；使用了额外的3000张图像训练。
 
-关键点说明:
+**关键点说明**:
 
 a.骨干网络使用的是resnet50
 
