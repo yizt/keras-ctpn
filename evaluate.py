@@ -34,6 +34,7 @@ def main(args):
     if args.weight_path is not None:
         config.WEIGHT_PATH = args.weight_path
     config.IMAGES_PER_GPU = 1
+    config.IMAGE_SHAPE = (1024, 1024, 3)
     # 图像路径
     image_path_list = file_utils.get_sub_files(args.image_dir)
 
