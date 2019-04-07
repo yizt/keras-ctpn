@@ -7,8 +7,8 @@
 3. [训练](#训练)
 4. [例子](#例子)<br>
    4.1 [ICDAR2015](#ICDAR2015)<br>
-   4.1.1 [带侧边改善](#带侧边改善)<br>
-   4.1.2 [不带带侧边改善](#不带侧边改善)<br>
+   4.1.1 [带侧边细化](#带侧边细化)<br>
+   4.1.2 [不带带侧边细化](#不带侧边细化)<br>
    4.1.3 [做数据增广-水平翻转](#做数据增广-水平翻转)<br>
    4.2 [ICDAR2017](#ICDAR2017)<br>
    4.3 [其它数据集](#其它数据集)
@@ -36,11 +36,11 @@ b.训练输入图像大小为720*720; 将图像的长边缩放到720,保持长�
 
 c.batch_size为4, 每张图像训练128个anchor,正负样本比为1:1;
 
-d.分类、边框回归以及侧边改善的损失函数权重为1:1:1;原论文中是1:1:2
+d.分类、边框回归以及侧边细化的损失函数权重为1:1:1;原论文中是1:1:2
 
-e.侧边改善与边框回归选择一样的正样本anchor;原文中应该是分开选择的
+e.侧边细化与边框回归选择一样的正样本anchor;原文中应该是分开选择的
 
-f.侧边改善还是有效果的(注:网上很多人说没有啥效果)
+f.侧边细化还是有效果的(注:网上很多人说没有啥效果)
 
 g.由于有双向GRU，水平翻转会影响效果(见样例[做数据增广-水平翻转](#做数据增广-水平翻转))
 
@@ -61,7 +61,7 @@ git clone https://github.com/yizt/keras-ctpn
 
 b. 预训练模型下载
 
-​    ICDAR2015训练集上训练好的模型下载地址：[ctpn.h5](https://pan.baidu.com/s/1XeQN0H1_FdTPBwH1GDlW_w) 提取码：k7yu 
+​    ICDAR2015训练集上训练好的模型下载地址：[ctpn.h5](https://pan.baidu.com/s/1XeQN0H1_FdTPBwH1GDlW_w) 提取码：k7yu ; [google drive](https://drive.google.com/file/d/1n1OeN99BP4NdFOXA1CaYom7O3S985Nd6/view?usp=sharing)
 
 c.修改配置类config.py中如下属性
 
@@ -144,13 +144,13 @@ python train.py --epochs 50
 
 ### ICDAR2015
 
-#### 带侧边改善
+#### 带侧边细化
 
 ![](image_examples/icdar2015/img_8.1.jpg)
 
 ![](image_examples/icdar2015/img_200.1.jpg)
 
-#### 不带侧边改善
+#### 不带侧边细化
 ![](image_examples/icdar2015/img_8.0.jpg)
 
 ![](image_examples/icdar2015/img_200.0.jpg)
@@ -175,7 +175,7 @@ python train.py --epochs 50
 
 ## toDoList
 
-1. 侧边改善(已完成)
+1. 侧边细化(已完成)
 2. ICDAR2017数据集训练(已完成)
 3. 检测文本行坐标映射到原图(已完成)
 4. 精度评估(已完成)
