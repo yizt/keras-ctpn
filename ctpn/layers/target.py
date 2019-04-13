@@ -158,8 +158,9 @@ def ctpn_target_graph(gt_boxes, gt_cls, anchors, valid_anchors_indices, train_an
     # 合并正负样本
     deltas = tf.concat([deltas, negative_deltas], axis=0, name='ctpn_target_deltas')
     class_ids = tf.concat([positive_gt_cls, negative_gt_cls], axis=0, name='ctpn_target_class_ids')
-    indices = tf.concat([tf.gather(valid_anchors_indices, positive_anchor_indices), negative_indices], axis=0,
+    indices = tf.concat([positive_anchor_indices, negative_indices], axis=0,
                         name='ctpn_train_anchor_indices')
+    indices = tf.gather(valid_anchors_indices, indices)  # 对应到有效的索引号
 
     # 计算padding
     deltas, class_ids = tf_utils.pad_list_to_fixed_size([deltas, tf.expand_dims(class_ids, 1)],
@@ -217,4 +218,4 @@ class CtpnTarget(layers.Layer):
                 (input_shape[0][0],),  # positive_num
                 (input_shape[0][0],),  # negative_num
                 (input_shape[0][0], 1),
-                (input_shape[0][0], 1)]   # gt_match_min_iou
+                (input_shape[0][0], 1)]  # gt_match_min_iou
