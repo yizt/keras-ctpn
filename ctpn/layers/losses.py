@@ -14,9 +14,9 @@ def ctpn_cls_loss(predict_cls_ids, true_cls_ids, indices):
     ctpn分类损失
     :param predict_cls_ids: 预测的anchors类别，(batch_num,anchors_num,2) fg or bg
     :param true_cls_ids:实际的anchors类别，(batch_num,rpn_train_anchors,(class_id,tag))
-             tag 1：正样本，0：负样本，-1 padding
+             tag 1：正负样本，0 padding
     :param indices: 正负样本索引，(batch_num,rpn_train_anchors,(idx,tag))，
-             idx:指定anchor索引位置，tag 1：正样本，0：负样本，-1 padding
+             idx:指定anchor索引位置，tag 1：正样本，-1：负样本，0 padding
     :return:
     """
     # 去除padding

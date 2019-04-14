@@ -98,7 +98,7 @@ def ctpn_target_graph(gt_boxes, gt_cls, anchors, valid_anchors_indices, train_an
     :param positive_ratios
     :param max_gt_num
     :return:
-    deltas:[train_anchors_num, (dy,dh,dx,tag)],anchor边框回归目标,tag=1为正样本,tag=0为padding
+    deltas:[train_anchors_num, (dy,dh,dx,tag)],anchor边框回归目标,tag=1为正负样本,tag=0为padding
     class_id:[train_anchors_num,(class_id,tag)]
     indices: [train_anchors_num,(anchors_index,tag)] tag=1为正样本,tag=0为padding,-1为负样本
     """
