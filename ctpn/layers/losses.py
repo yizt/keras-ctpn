@@ -38,7 +38,7 @@ def ctpn_cls_loss(predict_cls_ids, true_cls_ids, indices):
     # 交叉熵损失函数
     losses = tf.nn.softmax_cross_entropy_with_logits_v2(
         labels=true_cls_ids, logits=predict_cls_ids)
-    return losses
+    return tf.reduce_mean(losses)
 
 
 def smooth_l1_loss(y_true, y_predict, sigma2=9.0):
