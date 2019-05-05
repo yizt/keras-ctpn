@@ -10,7 +10,8 @@ import numpy as np
 from ..utils import image_utils, np_utils, gt_utils
 
 
-def generator(image_annotations, batch_size, image_shape, width_stride, max_gt_num):
+def generator(image_annotations, batch_size, image_shape, width_stride,
+              max_gt_num, horizontal_flip=False, random_crop=False):
     image_length = len(image_annotations)
     while True:
         ids = np.random.choice(image_length, batch_size, replace=False)
@@ -25,8 +26,8 @@ def generator(image_annotations, batch_size, image_shape, width_stride, max_gt_n
                                                                                 image_shape[0],
                                                                                 gt_quadrilaterals=image_annotation[
                                                                                     'quadrilaterals'],
-                                                                                horizontal_flip=False,
-                                                                                random_crop=False)
+                                                                                horizontal_flip=horizontal_flip,
+                                                                                random_crop=random_crop)
             class_ids = image_annotation['labels']
             gt_boxes, class_ids = gt_utils.gen_gt_from_quadrilaterals(gt_quadrilaterals,
                                                                       class_ids,

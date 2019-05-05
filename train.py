@@ -32,17 +32,18 @@ def get_call_back():
     :return:
     """
     checkpoint = ModelCheckpoint(filepath='/tmp/ctpn.{epoch:03d}.h5',
-                                 monitor='acc',
+                                 monitor='val_loss',
                                  verbose=1,
                                  save_best_only=False,
+                                 save_weights_only=True,
                                  period=5)
 
     # 验证误差没有提升
-    lr_reducer = ReduceLROnPlateau(monitor='loss',
+    lr_reducer = ReduceLROnPlateau(monitor='val_loss',
                                    factor=0.1,
                                    cooldown=0,
                                    patience=10,
-                                   min_lr=0)
+                                   min_lr=1e-4)
     log = TensorBoard(log_dir='log')
     return [lr_reducer, checkpoint, log]
 
@@ -67,17 +68,26 @@ def main(args):
         m.load_weights(config.PRE_TRAINED_WEIGHT, by_name=True)
     m.summary()
     # 生成器
-    gen = generator(image_annotations,
+    gen = generator(image_annotations[:-100],
                     config.IMAGES_PER_GPU,
                     config.IMAGE_SHAPE,
                     config.ANCHORS_WIDTH,
-                    config.MAX_GT_INSTANCES)
+                    config.MAX_GT_INSTANCES,
+                    horizontal_flip=False,
+                    random_crop=False)
+    val_gen = generator(image_annotations[-100:],
+                        config.IMAGES_PER_GPU,
+                        config.IMAGE_SHAPE,
+                        config.ANCHORS_WIDTH,
+                        config.MAX_GT_INSTANCES)
 
     # 训练
     m.fit_generator(gen,
                     steps_per_epoch=len(image_annotations) // config.IMAGES_PER_GPU * 2,
                     epochs=args.epochs,
                     initial_epoch=args.init_epochs,
+                    validation_data=val_gen,
+                    validation_steps=100 // config.IMAGES_PER_GPU,
                     verbose=True,
                     callbacks=get_call_back(),
                     workers=2,
@@ -89,7 +99,7 @@ def main(args):
 
 if __name__ == '__main__':
     parse = argparse.ArgumentParser()
-    parse.add_argument("--epochs", type=int, default=50, help="epochs")
+    parse.add_argument("--epochs", type=int, default=100, help="epochs")
     parse.add_argument("--init_epochs", type=int, default=0, help="epochs")
     parse.add_argument("--weight_path", type=str, default=None, help="weight path")
     argments = parse.parse_args(sys.argv[1:])
