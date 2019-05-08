@@ -75,12 +75,13 @@ def ctpn(base_features, num_anchors, rnn_units=128, fc_units=512):
     :param fc_units:
     :return:
     """
+    x = layers.Conv2D(512, kernel_size=(3, 3), padding='same', name='pre_fc')(base_features)  # [B,H,W,512]
     # 沿着宽度方式做rnn
     rnn_forward = layers.TimeDistributed(layers.GRU(rnn_units, return_sequences=True, kernel_initializer='he_normal'),
-                                         name='gru_forward')(base_features)
+                                         name='gru_forward')(x)
     rnn_backward = layers.TimeDistributed(
         layers.GRU(rnn_units, return_sequences=True, kernel_initializer='he_normal', go_backwards=True),
-        name='gru_backward')(base_features)
+        name='gru_backward')(x)
 
     rnn_output = layers.Concatenate(name='gru_concat')([rnn_forward, rnn_backward])  # (B,H,W,256)
 

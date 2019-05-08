@@ -37,11 +37,11 @@ class Config(object):
     MIN_SIZE_SIM = 0.7
 
     # 训练超参数
-    LEARNING_RATE = 0.001
+    LEARNING_RATE = 0.01
     LEARNING_MOMENTUM = 0.9
     # 权重衰减
     WEIGHT_DECAY = 0.0005,
-    GRADIENT_CLIP_NORM = 1.0
+    GRADIENT_CLIP_NORM = 5.0
 
     LOSS_WEIGHTS = {
         "ctpn_regress_loss": 1.,

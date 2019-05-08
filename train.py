@@ -39,7 +39,7 @@ def get_call_back():
                                  period=5)
 
     # 验证误差没有提升
-    lr_reducer = ReduceLROnPlateau(monitor='val_loss',
+    lr_reducer = ReduceLROnPlateau(monitor='loss',
                                    factor=0.1,
                                    cooldown=0,
                                    patience=10,
