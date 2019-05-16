@@ -32,7 +32,7 @@
 
 a.骨干网络使用的是resnet50
 
-b.训练输入图像大小为720*720; 将图像的长边缩放到720,保持长宽比,短边padding;原文是短边600;预测时使用1024*1024
+b.训练输入图像大小为720\*720; 将图像的长边缩放到720,保持长宽比,短边padding;原文是短边600;预测时使用1024*1024
 
 c.batch_size为4, 每张图像训练128个anchor,正负样本比为1:1;
 
@@ -61,7 +61,7 @@ git clone https://github.com/yizt/keras-ctpn
 
 b. 预训练模型下载
 
-​    ICDAR2015训练集上训练好的模型下载地址：[ctpn.h5](https://pan.baidu.com/s/1XeQN0H1_FdTPBwH1GDlW_w) 提取码：k7yu ; [google drive](https://drive.google.com/file/d/1n1OeN99BP4NdFOXA1CaYom7O3S985Nd6/view?usp=sharing)
+​    ICDAR2015训练集上训练好的模型下载地址： [google drive](https://drive.google.com/open?id=12t-PFYvYwx4In2aRv7OgRFkHa9rCjjn7)
 
 c.修改配置类config.py中如下属性
 
@@ -79,7 +79,7 @@ python predict.py --image_path image_3.jpg
 
 a. 执行如下命令,并将输出的txt压缩为zip包
 ```shell
-python evaluate.py --weight_path /tmp/ctpn.140.h5 --image_dir /opt/dataset/OCR/ICDAR_2015/test_images/ --output_dir /tmp/output_2015/
+python evaluate.py --weight_path /tmp/ctpn.100.h5 --image_dir /opt/dataset/OCR/ICDAR_2015/test_images/ --output_dir /tmp/output_2015/
 ```
 
 b. 提交在线评估
