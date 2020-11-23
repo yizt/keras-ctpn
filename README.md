@@ -61,7 +61,7 @@ git clone https://github.com/yizt/keras-ctpn
 
 b. 预训练模型下载
 
-​    ICDAR2015训练集上训练好的模型下载地址： [google drive](https://drive.google.com/open?id=12t-PFYvYwx4In2aRv7OgRFkHa9rCjjn7)
+​    ICDAR2015训练集上训练好的模型下载地址： [google drive](https://drive.google.com/open?id=12t-PFYvYwx4In2aRv7OgRFkHa9rCjjn7)，[百度云盘](https://pan.baidu.com/s/1GnDATacvBeFXpAwnBW6RaQ) 取码:wm47
 
 c.修改配置类config.py中如下属性
 
